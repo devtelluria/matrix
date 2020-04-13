@@ -42,7 +42,7 @@ export const initialState = {
   meetingSettings: storage.getMeetingSettings({
     micEnabled: true,
     videoEnabled: true,
-    resolution: `${ResolutionLevels.sd}`,
+    resolution: `${ResolutionLevels.hd}`,
     enableFirefoxSimulcast: false
   }),
   error: null,
