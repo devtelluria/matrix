@@ -7,12 +7,12 @@ const ResolutionLevels = {
 const formatOption = (level, label, standard = false) => ({
   value: `${level}`,
   label: `${label} (${level})`,
-  standard
+  standards
 });
 
 export const getResolutionLevelsOptions = () => [
-  formatOption(ResolutionLevels.hd, "High Definition"),
-  formatOption(ResolutionLevels.sd, "Standard Definition", true),
+  formatOption(ResolutionLevels.hd, "High Definition", true),
+  formatOption(ResolutionLevels.sd, "Standard Definition"),
   formatOption(ResolutionLevels.ld, "Low Definition")
 ];
 
