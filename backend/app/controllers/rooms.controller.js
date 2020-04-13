@@ -26,7 +26,7 @@ const createRoomFileSync = () => {
   };
 
   const niceNames = [
-    "Nebuchadnezzar",
+    "Dark_Star",
     "Logos",
     "Osiris",
     "Icarus",
