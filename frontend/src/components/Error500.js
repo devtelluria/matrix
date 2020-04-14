@@ -41,7 +41,7 @@ const Error500 = ({ onReload }) => {
           aria-label="Reload"
           onClick={onReload}
         >
-          Reload the Matrix
+          Recarregue o Proseia
         </Fab>
       </div>
     </div>
