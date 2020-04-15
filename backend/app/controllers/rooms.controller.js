@@ -35,6 +35,7 @@ const createRoomFileSync = () => {
     "Implantação TopCon",
     "Implantação TopGerente",
     "Implantação - Em Cliente",
+    "BI",
     "Infra Interna",
     "Infra Externa",
     "Motor 2",
@@ -42,8 +43,11 @@ const createRoomFileSync = () => {
     "Diretoria",
     "Administrativo / Financeiro",
     "Marketing",
+    "Produção de conteúdo",
     "Sala Reunião 01",
     "Sala Reunião 02",
+    "Reunião Externa 01",
+    "Reunião Externa 02",
     "Treinamentos"
   ];
 
