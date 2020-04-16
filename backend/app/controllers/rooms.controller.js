@@ -41,6 +41,7 @@ const createRoomFileSync = () => {
     "Motor 2",
     "Recursos Humanos",
     "Diretoria",
+    "Comercial",
     "Administrativo / Financeiro",
     "Marketing",
     "Produção de conteúdo",
