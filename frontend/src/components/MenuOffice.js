@@ -10,6 +10,8 @@ import debounce from "lodash.debounce";
 
 import ThemeCheckbox from "./ThemeCheckbox";
 import NotificationCheckbox from "./NotificationCheckbox";
+import MicrophoneCheckbox from "./MicrophoneCheckbox";
+import AudioOutputCheckbox from "./AudioOutputCheckbox";
 
 const useStyles = makeStyles(theme => ({
   search: {
@@ -79,6 +81,21 @@ const MenuOffice = ({
           }}
         />
       </div>
+
+      <MicrophoneCheckbox
+        isDisabled={settings.microphoneDisabled}
+        onChange={event => {
+          onChangeSettings("microphoneDisabled", event.target.checked);
+        }}
+      />
+
+      <AudioOutputCheckbox
+        isDisabled={settings.audioOutputDisabled}
+        onChange={event => {
+          onChangeSettings("audioOutputDisabled", event.target.checked);
+        }}
+      />
+
       <Tooltip title="Show only full room">
         <Checkbox
           icon={<SupervisedUserCircle />}
@@ -108,7 +125,10 @@ MenuOffice.propTypes = {
     onlyFullRoom: PropTypes.bool
   }),
   settings: PropTypes.shape({
-    notificationDisabled: PropTypes.bool
+    notificationDisabled: PropTypes.bool,
+    microphoneDisabled: PropTypes.bool,
+    cameraDisabled: PropTypes.bool,
+    audioOutputDisabled: PropTypes.bool
   })
 };
 

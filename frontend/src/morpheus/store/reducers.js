@@ -37,7 +37,10 @@ export const initialState = {
     search: ""
   },
   systemSettings: {
-    notificationDisabled: false
+    notificationDisabled: false,
+    microphoneDisabled: true,
+    cameraDisabled: true,
+    audioOutputDisabled: false
   },
   meetingSettings: storage.getMeetingSettings({
     micEnabled: true,

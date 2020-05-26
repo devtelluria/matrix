@@ -33,7 +33,10 @@ export const CurrentRoomPropType = PropTypes.shape({
 });
 
 export const SettingsPropType = PropTypes.exact({
-  notificationDisabled: PropTypes.bool.isRequired
+  notificationDisabled: PropTypes.bool.isRequired,
+  microphoneDisabled: PropTypes.bool.isRequired,
+  cameraDisabled: PropTypes.bool.isRequired,
+  audioOutputDisabled: PropTypes.bool.isRequired
 });
 
 export const OfficeFilterPropType = PropTypes.exact({
