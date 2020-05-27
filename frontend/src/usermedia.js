@@ -98,7 +98,7 @@ const onRemoteTrack = (track) => {
         `track audio output device was changed to ${deviceId}`));
 
   if (track.getType() === 'video') {
-    const videoSource = new Video();
+    /*const videoSource = new Video();
     videoSource.autoplay = true;
 
     if (!videoSources[participant]) {
@@ -106,7 +106,7 @@ const onRemoteTrack = (track) => {
     }
 
     videoSources[participant].push(videoSource);
-    track.attach(videoSource);
+    track.attach(videoSource);*/
   } else {
     const audioSource = new Audio();
     audioSource.autoplay = true;
@@ -117,6 +117,7 @@ const onRemoteTrack = (track) => {
 
     audioSources[participant].push(audioSource);
     track.attach(audioSource);
+    console.log('remote track added ... xxx ')
   }
 }
 
@@ -127,7 +128,6 @@ const onConferenceJoined = () => {
   console.log('conference joined!');
   isJoined = true;
   for (let i = 0; i < localTracks.length; i++) {
-    localTracks[i].mute();
     room.addTrack(localTracks[i]);
   }
 }
@@ -152,7 +152,8 @@ const onUserLeft = (id) => {
 * That function is called when connection is established successfully
 */
 const onConnectionSuccess = () => {
-  room = connection.initJitsiConference('conference', confOptions);
+  room = connection.initJitsiConference('telluria', confOptions);
+  room.setStartMutedPolicy({ audio: true, video: true });
   room.on(JitsiMeetJS.events.conference.TRACK_ADDED, onRemoteTrack);
   room.on(JitsiMeetJS.events.conference.TRACK_REMOVED, track => {
     console.log(`track removed!!!${track}`);
@@ -281,24 +282,6 @@ const initOptions = {
 JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.ERROR);
 JitsiMeetJS.init(initOptions);
 
-connection = new JitsiMeetJS.JitsiConnection(null, null, options);
-
-connection.addEventListener(
-  JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
-  onConnectionSuccess);
-connection.addEventListener(
-  JitsiMeetJS.events.connection.CONNECTION_FAILED,
-  onConnectionFailed);
-connection.addEventListener(
-  JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
-  disconnect);
-
-JitsiMeetJS.mediaDevices.addEventListener(
-  JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
-  onDeviceListChanged);
-
-connection.connect();
-
 if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
   JitsiMeetJS.mediaDevices.enumerateDevices(devices => {
     const audioOutputDevices
@@ -367,6 +350,24 @@ export const requestPermissionToMicrophone = callback => {
 };
 
 const createLocalTracks = (callback = null) => {
+  connection = new JitsiMeetJS.JitsiConnection(null, null, options);
+
+  connection.addEventListener(
+    JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
+    onConnectionSuccess);
+  connection.addEventListener(
+    JitsiMeetJS.events.connection.CONNECTION_FAILED,
+    onConnectionFailed);
+  connection.addEventListener(
+    JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
+    disconnect);
+
+  JitsiMeetJS.mediaDevices.addEventListener(
+    JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
+    onDeviceListChanged);
+
+  connection.connect();
+
   JitsiMeetJS.createLocalTracks({ devices: ['audio'/*, 'video'*/] })
     .then(tracks => {
       onLocalTracks(tracks);
@@ -380,10 +381,7 @@ const createLocalTracks = (callback = null) => {
 
 export const toogleMute = () => {
   if (localTracks.length > 0) {
-    console.log(localTracks);
-
     localTracks.forEach(track => {
-      console.log(track.isMuted());
       if (track.isMuted())
         track.unmute();
       else
