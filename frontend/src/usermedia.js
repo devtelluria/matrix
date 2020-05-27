@@ -1,28 +1,3 @@
-var _isMicrophonePermissionGranted = false;
-var _isMicrophonePermissionDenied = false;
-var _isCameraPermissionGranted = false;
-var _isCameraPermissionDenied = false;
-
-navigator.permissions.query({ name: "microphone" })
-  .then(({ state }) => {
-    _isMicrophonePermissionGranted = (state === 'granted');
-  });
-
-navigator.permissions.query({ name: "microphone" })
-  .then(({ state }) => {
-    _isMicrophonePermissionDenied = (state === 'denied');
-  });
-
-navigator.permissions.query({ name: "camera" })
-  .then(({ state }) => {
-    _isCameraPermissionGranted = (state === 'granted');
-  });
-
-navigator.permissions.query({ name: "camera" })
-  .then(({ state }) => {
-    _isCameraPermissionDenied = (state === 'denied');
-  });
-
 /* ******************************************************************** */
 /*---- JITST BEGIN ----*/
 import * as jquery from './jitsi/jquery-2.1.1.min.js';
@@ -56,12 +31,13 @@ let localTracks = [];
 const remoteTracks = {};
 
 let audioSources = {};
+let videoSources = {};
 
 /**
 * Handles local tracks.
 * @param tracks Array with JitsiTrack objects
 */
-function onLocalTracks(tracks) {
+const onLocalTracks = (tracks) => {
   localTracks = tracks;
   for (let i = 0; i < localTracks.length; i++) {
     localTracks[i].addEventListener(
@@ -96,7 +72,7 @@ function onLocalTracks(tracks) {
 * Handles remote tracks
 * @param track JitsiTrack object
 */
-function onRemoteTrack(track) {
+const onRemoteTrack = (track) => {
   if (track.isLocal()) {
     return;
   }
@@ -120,33 +96,38 @@ function onRemoteTrack(track) {
     deviceId =>
       console.log(
         `track audio output device was changed to ${deviceId}`));
-  const id = participant + track.getType() + idx;
 
   if (track.getType() === 'video') {
-    // $('body').append(
-    //   `<video autoplay='1' id='${participant}video${idx}' />`);
+    const videoSource = new Video();
+    videoSource.autoplay = true;
+
+    if (!videoSources[participant]) {
+      videoSources[participant] = [];
+    }
+
+    videoSources[participant].push(videoSource);
+    track.attach(videoSource);
   } else {
     const audioSource = new Audio();
     audioSource.autoplay = true;
-    
+
     if (!audioSources[participant]) {
       audioSources[participant] = [];
     }
 
     audioSources[participant].push(audioSource);
     track.attach(audioSource);
-    
   }
-  //track.attach($(`#${id}`)[0]);
 }
 
 /**
 * That function is executed when the conference is joined
 */
-function onConferenceJoined() {
+const onConferenceJoined = () => {
   console.log('conference joined!');
   isJoined = true;
   for (let i = 0; i < localTracks.length; i++) {
+    localTracks[i].mute();
     room.addTrack(localTracks[i]);
   }
 }
@@ -155,7 +136,7 @@ function onConferenceJoined() {
 *
 * @param id
 */
-function onUserLeft(id) {
+const onUserLeft = (id) => {
   console.log('user left');
   if (!remoteTracks[id]) {
     return;
@@ -163,14 +144,14 @@ function onUserLeft(id) {
   const tracks = remoteTracks[id];
 
   for (let i = 0; i < tracks.length; i++) {
-    // tracks[i].detach($(`#${id}${tracks[i].getType()}`));
+    tracks[i].detach(audioSources[id][i]);
   }
 }
 
 /**
 * That function is called when connection is established successfully
 */
-function onConnectionSuccess() {
+const onConnectionSuccess = () => {
   room = connection.initJitsiConference('conference', confOptions);
   room.on(JitsiMeetJS.events.conference.TRACK_ADDED, onRemoteTrack);
   room.on(JitsiMeetJS.events.conference.TRACK_REMOVED, track => {
@@ -202,21 +183,21 @@ function onConnectionSuccess() {
 /**
 * This function is called when the connection fail.
 */
-function onConnectionFailed() {
+const onConnectionFailed = () => {
   console.error('Connection Failed!');
 }
 
 /**
 * This function is called when the connection fail.
 */
-function onDeviceListChanged(devices) {
+const onDeviceListChanged = (devices) => {
   console.info('current devices', devices);
 }
 
 /**
 * This function is called when we disconnect.
 */
-function disconnect() {
+const disconnect = () => {
   console.log('disconnect!');
   connection.removeEventListener(
     JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
@@ -232,7 +213,7 @@ function disconnect() {
 /**
 *
 */
-function leaveRoom() {
+const leaveRoom = () => {
   for (let i = 0; i < localTracks.length; i++) {
     localTracks[i].dispose();
   }
@@ -245,7 +226,7 @@ let isVideo = true;
 /**
 *
 */
-function switchVideo() { // eslint-disable-line no-unused-vars
+const switchVideo = () => { // eslint-disable-line no-unused-vars
   isVideo = !isVideo;
   if (localTracks[1]) {
     localTracks[1].dispose();
@@ -318,12 +299,6 @@ JitsiMeetJS.mediaDevices.addEventListener(
 
 connection.connect();
 
-JitsiMeetJS.createLocalTracks({ devices: ['audio'/*, 'video'*/] })
-  .then(onLocalTracks)
-  .catch(error => {
-    throw error;
-  });
-
 if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
   JitsiMeetJS.mediaDevices.enumerateDevices(devices => {
     const audioOutputDevices
@@ -344,6 +319,19 @@ if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
 /*---- JITST END ----*/
 /* ******************************************************************** */
 
+var _isCameraPermissionGranted = false;
+var _isCameraPermissionDenied = false;
+
+navigator.permissions.query({ name: "camera" })
+  .then(({ state }) => {
+    _isCameraPermissionGranted = (state === 'granted');
+  });
+
+navigator.permissions.query({ name: "camera" })
+  .then(({ state }) => {
+    _isCameraPermissionDenied = (state === 'denied');
+  });
+
 export const browserHasSupport = () => {
   try {
     return !!navigator.mediaDevices;
@@ -352,25 +340,57 @@ export const browserHasSupport = () => {
   }
 }
 
-export const isMicrophonePermissionGranted = () => {
+export const isMicrophonePermissionGranted = async () => {
   if (!browserHasSupport()) {
     return false;
   }
 
-  return _isMicrophonePermissionGranted;
+  return await navigator.permissions.query({ name: "microphone" })
+    .then(({ state }) => {
+      return (state === 'granted');
+    });
 }
 
-export const isMicrophoneBlocked = () => {
+export const isMicrophoneBlocked = async () => {
   if (!browserHasSupport()) {
     return true;
   }
 
-  return _isMicrophonePermissionDenied;
+  return await navigator.permissions.query({ name: "microphone" })
+    .then(({ state }) => {
+      return (state === 'denied');
+    });
 }
 
 export const requestPermissionToMicrophone = callback => {
-  alert('TESTE');
-  // Notification.requestPermission(permission => {
-  //   callback(permission === NOTIFICATION_PERMISSION_GRANTED);
-  // });
+  createLocalTracks(callback);
 };
+
+const createLocalTracks = (callback = null) => {
+  JitsiMeetJS.createLocalTracks({ devices: ['audio'/*, 'video'*/] })
+    .then(tracks => {
+      onLocalTracks(tracks);
+      if (callback) callback(true);
+    })
+    .catch(error => {
+      console.log(error);
+      if (callback) callback(false);
+    });
+}
+
+export const toogleMute = () => {
+  if (localTracks.length > 0) {
+    console.log(localTracks);
+
+    localTracks.forEach(track => {
+      console.log(track.isMuted());
+      if (track.isMuted())
+        track.unmute();
+      else
+        track.mute();
+    });
+  } else {
+    createLocalTracks();
+  }
+
+}

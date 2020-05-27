@@ -11,12 +11,21 @@ import {
   isMicrophonePermissionGranted,
   isMicrophoneBlocked,
   browserHasSupport,
-  requestPermissionToMicrophone
+  requestPermissionToMicrophone,
+  toogleMute
 } from "../usermedia";
 import { showMessageDialog } from "../morpheus/store/actions";
 
 const MicrophoneCheckbox = ({ onChange, openMessageDialog, isDisabled }) => {
-  const [isAllowed, toggleAllowed] = useState(isMicrophonePermissionGranted());
+  const [isAllowed, toggleAllowed] = useState(false);
+  const [isBlocked, toggleBlocked] = useState(false);
+
+  isMicrophonePermissionGranted().then(allowed => {
+    toggleAllowed(allowed);
+  });
+  isMicrophoneBlocked().then(blocked => {
+    toggleBlocked(blocked);
+  });
 
   if (!browserHasSupport()) {
     return (
@@ -33,7 +42,7 @@ const MicrophoneCheckbox = ({ onChange, openMessageDialog, isDisabled }) => {
           aria-label="Exit room"
           aria-controls="menu-appbar"
           onClick={() => {
-            if (isMicrophoneBlocked()) {
+            if (isBlocked) {
               openMessageDialog(
                 "Microphone blocked",
                 "You must unlock your microphone in your browser settings."
@@ -60,7 +69,10 @@ const MicrophoneCheckbox = ({ onChange, openMessageDialog, isDisabled }) => {
         icon={<MicIcon />}
         checkedIcon={<MicOffIcon />}
         checked={isDisabled}
-        onChange={onChange}
+        onChange={(event) => {
+          onChange(event);
+          toogleMute();
+        }}
       />
     </Tooltip>
   );

@@ -7,6 +7,9 @@
     "cover": "nyc report --reporter=html --reporter=text --reporter=lcovonly --report-dir=test/coverage;",
     "start": "webpack --watch --config webpack.development.js"
   },
+  "browserslist": [
+    "since 2017-06"
+  ],
   "dependencies": {
     "@material-ui/core": "^4.4.1",
     "@material-ui/icons": "^4.4.1",
