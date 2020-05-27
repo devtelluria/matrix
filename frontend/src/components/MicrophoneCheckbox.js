@@ -6,10 +6,9 @@ import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import MicIcon from '@material-ui/icons/Mic';
 import MicOffIcon from '@material-ui/icons/MicOff';
-import MicNoneIcon from '@material-ui/icons/MicNone';
 
 import {
-  isMicrophoneEnabled,
+  isMicrophonePermissionGranted,
   isMicrophoneBlocked,
   browserHasSupport,
   requestPermissionToMicrophone
@@ -17,7 +16,7 @@ import {
 import { showMessageDialog } from "../morpheus/store/actions";
 
 const MicrophoneCheckbox = ({ onChange, openMessageDialog, isDisabled }) => {
-  const [isAllowed, toggleAllowed] = useState(isMicrophoneEnabled());
+  const [isAllowed, toggleAllowed] = useState(isMicrophonePermissionGranted());
 
   if (!browserHasSupport()) {
     return (
@@ -49,7 +48,7 @@ const MicrophoneCheckbox = ({ onChange, openMessageDialog, isDisabled }) => {
           }}
           color="inherit"
         >
-          <MicNoneIcon />
+          <MicOffIcon />
         </IconButton>
       </Tooltip>
     );
