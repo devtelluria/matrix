@@ -55,8 +55,7 @@ let room = null;
 let localTracks = [];
 const remoteTracks = {};
 
-let audioContext = null;
-let audioSources = [];
+let audioSources = {};
 
 /**
 * Handles local tracks.
@@ -106,7 +105,7 @@ function onRemoteTrack(track) {
   if (!remoteTracks[participant]) {
     remoteTracks[participant] = [];
   }
-  //const idx = remoteTracks[participant].push(track);
+  const idx = remoteTracks[participant].push(track);
 
   track.addEventListener(
     JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED,
@@ -121,24 +120,24 @@ function onRemoteTrack(track) {
     deviceId =>
       console.log(
         `track audio output device was changed to ${deviceId}`));
-  //const id = participant + track.getType() + idx;
+  const id = participant + track.getType() + idx;
 
   if (track.getType() === 'video') {
     // $('body').append(
     //   `<video autoplay='1' id='${participant}video${idx}' />`);
   } else {
-    // $('body').append(
-    //   `<audio autoplay='1' id='${participant}audio${idx}' />`);
-    if (!audioContext) {
-      audioContext = new AudioContext();
-      console.log('context created');
+    const audioSource = new Audio();
+    audioSource.autoplay = true;
+    
+    if (!audioSources[participant]) {
+      audioSources[participant] = [];
     }
-    console.log('TRACK:');
-    console.log(track);
-    const audioSource = audioContext.createMediaStreamSource(track.stream);
-    audioSource.connect(audioContext.destination);
+
+    audioSources[participant].push(audioSource);
+    track.attach(audioSource);
+    
   }
-  // track.attach($(`#${id}`)[0]);
+  //track.attach($(`#${id}`)[0]);
 }
 
 /**
