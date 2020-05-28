@@ -6,21 +6,32 @@ import Tooltip from "@material-ui/core/Tooltip";
 import VolumeIcon from '@material-ui/icons/VolumeUp';
 import VolumeOffIcon from '@material-ui/icons/VolumeOff';
 
-const AudioOutputCheckbox = ({ onChange, isDisabled }) => {
+import {
+  leaveRoom,
+  requestPermissionToMicrophone
+} from "../usermedia";
+
+const AudioOutputCheckbox = ({ isDisabled }) => {
   return (
     <Tooltip title={`${isDisabled ? "Enable" : "Disable"} audio output`}>
       <Checkbox
         icon={<VolumeIcon />}
         checkedIcon={<VolumeOffIcon />}
         checked={isDisabled}
-        onChange={onChange}
+        onChange={event => {
+          if (isDisabled) {
+            requestPermissionToMicrophone();
+          } else {
+            leaveRoom();
+          }
+          //onChange(event);
+        }}
       />
     </Tooltip>
   );
 };
 
 AudioOutputCheckbox.propTypes = {
-  onChange: PropTypes.func.isRequired,
   isDisabled: PropTypes.bool.isRequired
 };
 

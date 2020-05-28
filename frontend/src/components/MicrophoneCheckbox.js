@@ -12,11 +12,14 @@ import {
   isMicrophoneBlocked,
   browserHasSupport,
   requestPermissionToMicrophone,
-  toogleMute
+  toogleMute,
+  registerOnJoinRoomCallback,
+  registerOnLeaveRoomCallback,
+  registerOnLocalTrackMuteChangedCallback
 } from "../usermedia";
 import { showMessageDialog } from "../morpheus/store/actions";
 
-const MicrophoneCheckbox = ({ onChange, openMessageDialog, isDisabled }) => {
+const MicrophoneCheckbox = ({ onChange, toggleAudioOutput, openMessageDialog, isDisabled, isAudioOutputDisabled }) => {
   const [isAllowed, toggleAllowed] = useState(false);
   const [isBlocked, toggleBlocked] = useState(false);
 
@@ -25,6 +28,18 @@ const MicrophoneCheckbox = ({ onChange, openMessageDialog, isDisabled }) => {
   });
   isMicrophoneBlocked().then(blocked => {
     toggleBlocked(blocked);
+  });
+
+  registerOnJoinRoomCallback('MicrophoneCheckbox', () => {
+    toggleAudioOutput(false);
+  });
+
+  registerOnLeaveRoomCallback('MicrophoneCheckbox', () => {
+    toggleAudioOutput(true);
+  });
+
+  registerOnLocalTrackMuteChangedCallback('MicrophoneCheckbox', isMuted => {
+    onChange(isMuted);
   });
 
   if (!browserHasSupport()) {
@@ -49,9 +64,9 @@ const MicrophoneCheckbox = ({ onChange, openMessageDialog, isDisabled }) => {
               );
             } else {
               requestPermissionToMicrophone(hasPermission => {
-                if (hasPermission) {
-                  toggleAllowed(true);
-                }
+                //toggleAudioOutput(!hasPermission);
+                toggleAllowed(hasPermission);
+                toggleBlocked(!hasPermission);
               });
             }
           }}
@@ -64,13 +79,12 @@ const MicrophoneCheckbox = ({ onChange, openMessageDialog, isDisabled }) => {
   }
 
   return (
-    <Tooltip title={`${isDisabled ? "Enable" : "Disable"} microphone`}>
+    <Tooltip title={`${(isDisabled || isAudioOutputDisabled) ? "Enable" : "Disable"} microphone`}>
       <Checkbox
         icon={<MicIcon />}
         checkedIcon={<MicOffIcon />}
-        checked={isDisabled}
-        onChange={(event) => {
-          onChange(event);
+        checked={isDisabled || isAudioOutputDisabled}
+        onChange={() => {
           toogleMute();
         }}
       />
@@ -80,8 +94,10 @@ const MicrophoneCheckbox = ({ onChange, openMessageDialog, isDisabled }) => {
 
 MicrophoneCheckbox.propTypes = {
   onChange: PropTypes.func.isRequired,
+  toggleAudioOutput: PropTypes.func.isRequired,
   openMessageDialog: PropTypes.func.isRequired,
-  isDisabled: PropTypes.bool.isRequired
+  isDisabled: PropTypes.bool.isRequired,
+  isAudioOutputDisabled: PropTypes.bool.isRequired
 };
 
 const mapDispatchToProps = {

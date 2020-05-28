@@ -84,16 +84,17 @@ const MenuOffice = ({
 
       <MicrophoneCheckbox
         isDisabled={settings.microphoneDisabled}
-        onChange={event => {
-          onChangeSettings("microphoneDisabled", event.target.checked);
+        isAudioOutputDisabled={settings.audioOutputDisabled}
+        onChange={disabled => {
+          onChangeSettings("microphoneDisabled", disabled);
+        }}
+        toggleAudioOutput={disabled => {
+          onChangeSettings("audioOutputDisabled", disabled);
         }}
       />
 
       <AudioOutputCheckbox
         isDisabled={settings.audioOutputDisabled}
-        onChange={event => {
-          onChangeSettings("audioOutputDisabled", event.target.checked);
-        }}
       />
 
       <Tooltip title="Show only full room">

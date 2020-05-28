@@ -40,7 +40,7 @@ export const initialState = {
     notificationDisabled: false,
     microphoneDisabled: true,
     cameraDisabled: true,
-    audioOutputDisabled: false
+    audioOutputDisabled: true
   },
   meetingSettings: storage.getMeetingSettings({
     micEnabled: true,

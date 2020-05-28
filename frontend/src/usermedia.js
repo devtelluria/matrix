@@ -1,3 +1,4 @@
+import uuid from "uuid/v4";
 /* ******************************************************************** */
 /*---- JITST BEGIN ----*/
 import * as jquery from './jitsi/jquery-2.1.1.min.js';
@@ -45,7 +46,12 @@ const onLocalTracks = (tracks) => {
       audioLevel => console.log(`Audio Level local: ${audioLevel}`));
     localTracks[i].addEventListener(
       JitsiMeetJS.events.track.TRACK_MUTE_CHANGED,
-      () => console.log('local track muted'));
+      (track) => {
+        Object.keys(_onLocalTrackMuteChangedCallbacks).forEach(id => {
+          _onLocalTrackMuteChangedCallbacks[id](track.isMuted());
+        });
+        console.log('local track mute changed: ' + track.isMuted());
+      });
     localTracks[i].addEventListener(
       JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED,
       () => console.log('local track stoped'));
@@ -117,7 +123,6 @@ const onRemoteTrack = (track) => {
 
     audioSources[participant].push(audioSource);
     track.attach(audioSource);
-    console.log('remote track added ... xxx ')
   }
 }
 
@@ -128,8 +133,13 @@ const onConferenceJoined = () => {
   console.log('conference joined!');
   isJoined = true;
   for (let i = 0; i < localTracks.length; i++) {
+    localTracks[i].mute();
     room.addTrack(localTracks[i]);
   }
+
+  Object.keys(_onJoinRoomCallbacks).forEach(id => {
+    _onJoinRoomCallbacks[id]();
+  });
 }
 
 /**
@@ -211,17 +221,6 @@ const disconnect = () => {
     disconnect);
 }
 
-/**
-*
-*/
-const leaveRoom = () => {
-  for (let i = 0; i < localTracks.length; i++) {
-    localTracks[i].dispose();
-  }
-  room.leave();
-  connection.disconnect();
-}
-
 let isVideo = true;
 
 /**
@@ -299,6 +298,39 @@ if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
     }
   });
 }
+
+const startJitsiConnection = () => {
+  connection = new JitsiMeetJS.JitsiConnection(null, null, options);
+
+  connection.addEventListener(
+    JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
+    onConnectionSuccess);
+  connection.addEventListener(
+    JitsiMeetJS.events.connection.CONNECTION_FAILED,
+    onConnectionFailed);
+  connection.addEventListener(
+    JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
+    disconnect);
+
+  JitsiMeetJS.mediaDevices.addEventListener(
+    JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
+    onDeviceListChanged);
+
+  connection.connect();
+}
+
+const createLocalAudioTracks = (callback = null) => {
+  JitsiMeetJS.createLocalTracks({ devices: ['audio'/*, 'video'*/] })
+    .then(tracks => {
+      onLocalTracks(tracks);
+      startJitsiConnection();
+      if (callback) callback(true);
+    })
+    .catch(error => {
+      console.error(error);
+      if (callback) callback(false);
+    });
+}
 /*---- JITST END ----*/
 /* ******************************************************************** */
 
@@ -314,6 +346,29 @@ navigator.permissions.query({ name: "camera" })
   .then(({ state }) => {
     _isCameraPermissionDenied = (state === 'denied');
   });
+
+const _onLocalTrackMuteChangedCallbacks = {};
+const _onJoinRoomCallbacks = {};
+const _onLeaveRoomCallbacks = {};
+
+export const registerOnLocalTrackMuteChangedCallback = (id, callback) => {
+  _onLocalTrackMuteChangedCallbacks[id] = callback;
+}
+export const unregisterOnLocalTrackMuteChangedCallback = (id) => {
+  delete _onLocalTrackMuteChangedCallbacks[id];
+}
+export const registerOnJoinRoomCallback = (id, callback) => {
+  _onJoinRoomCallbacks[id] = callback;
+}
+export const unregisterOnJoinRoomCallback = (id) => {
+  delete _onJoinRoomCallbacks[id];
+}
+export const registerOnLeaveRoomCallback = (id, callback) => {
+  _onLeaveRoomCallbacks[id] = callback;
+}
+export const unregisterOnLeaveRoomCallback = (id) => {
+  delete _onLeaveRoomCallbacks[id];
+}
 
 export const browserHasSupport = () => {
   try {
@@ -346,49 +401,38 @@ export const isMicrophoneBlocked = async () => {
 }
 
 export const requestPermissionToMicrophone = callback => {
-  createLocalTracks(callback);
+  createLocalAudioTracks(callback);
 };
 
-const createLocalTracks = (callback = null) => {
-  connection = new JitsiMeetJS.JitsiConnection(null, null, options);
-
-  connection.addEventListener(
-    JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
-    onConnectionSuccess);
-  connection.addEventListener(
-    JitsiMeetJS.events.connection.CONNECTION_FAILED,
-    onConnectionFailed);
-  connection.addEventListener(
-    JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
-    disconnect);
-
-  JitsiMeetJS.mediaDevices.addEventListener(
-    JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
-    onDeviceListChanged);
-
-  connection.connect();
-
-  JitsiMeetJS.createLocalTracks({ devices: ['audio'/*, 'video'*/] })
-    .then(tracks => {
-      onLocalTracks(tracks);
-      if (callback) callback(true);
-    })
-    .catch(error => {
-      console.log(error);
-      if (callback) callback(false);
+export const leaveRoom = () => {
+  for (let i = 0; i < localTracks.length; i++) {
+    localTracks[i].dispose();
+  }
+  room.leave().then(() => {
+    isJoined = false;
+    Object.keys(_onLeaveRoomCallbacks).forEach(id => {
+      _onLeaveRoomCallbacks[id]();
     });
+  });
+  connection.disconnect();
 }
 
 export const toogleMute = () => {
-  if (localTracks.length > 0) {
-    localTracks.forEach(track => {
-      if (track.isMuted())
-        track.unmute();
-      else
-        track.mute();
+  if (!isJoined) {
+    const id = uuid();
+    registerOnJoinRoomCallback(id, () => {
+      unregisterOnJoinRoomCallback(id);
+      localTracks.forEach(track => track.unmute());
     });
-  } else {
-    createLocalTracks();
+
+    createLocalAudioTracks();
+    return;
   }
 
+  localTracks.forEach(track => {
+    if (track.isMuted())
+      track.unmute();
+    else
+      track.mute();
+  });
 }
