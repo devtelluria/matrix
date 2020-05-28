@@ -422,12 +422,12 @@ export const requestPermissionToMicrophone = (roomId, callback) => {
 
 export const leaveRoom = () => {
   const previousRoomId = _roomId
+  _isJoined = false;
   for (let i = 0; i < _localTracks.length; i++) {
     _localTracks[i].dispose();
   }
   room.leave().then(() => {
     if (previousRoomId === _roomId) {
-      _isJoined = false;
       Object.keys(_onLeaveRoomCallbacks).forEach(id => {
         _onLeaveRoomCallbacks[id]();
       });
