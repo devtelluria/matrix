@@ -5,46 +5,48 @@ import * as jquery from './jitsi/jquery-2.1.1.min.js';
 window.$ = jquery;
 import JitsiMeetJS from './jitsi/lib-jitsi-meet.min.js';
 
-const backendUrl = '209-50-53-252.us-chi1.upcloud.host';
+const _backendUrl = '209-50-53-252.us-chi1.upcloud.host';
 
-const options = {
+const _options = {
   hosts: {
     domain: `meet.jitsi`,
     muc: `muc.meet.jitsi` // FIXME: use XEP-0030
   },
   //serviceUrl: `https://${backendUrl}/http-bind`,
 
-  bosh: `https://${backendUrl}/http-bind`, // FIXME: use xep-0156 for that
+  bosh: `https://${_backendUrl}/http-bind`, // FIXME: use xep-0156 for that
 
   // The name of client node advertised in XEP-0115 'c' stanza
   clientNode: 'https://jitsi.org/jitsimeet'
 };
 
-const confOptions = {
+const _confOptions = {
   openBridgeChannel: true
 };
 
-let connection = null;
-let isJoined = false;
+let _connection = null;
+let _isConnected = false;
+let _isJoined = false;
 let room = null;
 
-let localTracks = [];
+let _localTracks = [];
 const remoteTracks = {};
 
-let audioSources = {};
-let videoSources = {};
+let _roomId = '';
+let _audioSources = {};
+let _videoSources = {};
 
 /**
 * Handles local tracks.
 * @param tracks Array with JitsiTrack objects
 */
 const onLocalTracks = (tracks) => {
-  localTracks = tracks;
-  for (let i = 0; i < localTracks.length; i++) {
-    localTracks[i].addEventListener(
+  _localTracks = tracks;
+  for (let i = 0; i < _localTracks.length; i++) {
+    _localTracks[i].addEventListener(
       JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED,
       audioLevel => console.log(`Audio Level local: ${audioLevel}`));
-    localTracks[i].addEventListener(
+    _localTracks[i].addEventListener(
       JitsiMeetJS.events.track.TRACK_MUTE_CHANGED,
       (track) => {
         Object.keys(_onLocalTrackMuteChangedCallbacks).forEach(id => {
@@ -52,10 +54,10 @@ const onLocalTracks = (tracks) => {
         });
         console.log('local track mute changed: ' + track.isMuted());
       });
-    localTracks[i].addEventListener(
+    _localTracks[i].addEventListener(
       JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED,
       () => console.log('local track stoped'));
-    localTracks[i].addEventListener(
+    _localTracks[i].addEventListener(
       JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED,
       deviceId =>
         console.log(
@@ -68,8 +70,8 @@ const onLocalTracks = (tracks) => {
     //   //   `<audio autoplay='1' muted='true' id='localAudio${i}' />`);
     //   // localTracks[i].attach($(`#localAudio${i}`)[0]);
     // }
-    if (isJoined) {
-      room.addTrack(localTracks[i]);
+    if (_isJoined) {
+      room.addTrack(_localTracks[i]);
     }
   }
 }
@@ -117,11 +119,11 @@ const onRemoteTrack = (track) => {
     const audioSource = new Audio();
     audioSource.autoplay = true;
 
-    if (!audioSources[participant]) {
-      audioSources[participant] = [];
+    if (!_audioSources[participant]) {
+      _audioSources[participant] = [];
     }
 
-    audioSources[participant].push(audioSource);
+    _audioSources[participant].push(audioSource);
     track.attach(audioSource);
   }
 }
@@ -131,10 +133,10 @@ const onRemoteTrack = (track) => {
 */
 const onConferenceJoined = () => {
   console.log('conference joined!');
-  isJoined = true;
-  for (let i = 0; i < localTracks.length; i++) {
-    localTracks[i].mute();
-    room.addTrack(localTracks[i]);
+  _isJoined = true;
+  for (let i = 0; i < _localTracks.length; i++) {
+    _localTracks[i].mute();
+    room.addTrack(_localTracks[i]);
   }
 
   Object.keys(_onJoinRoomCallbacks).forEach(id => {
@@ -154,7 +156,7 @@ const onUserLeft = (id) => {
   const tracks = remoteTracks[id];
 
   for (let i = 0; i < tracks.length; i++) {
-    tracks[i].detach(audioSources[id][i]);
+    tracks[i].detach(_audioSources[id][i]);
   }
 }
 
@@ -162,7 +164,14 @@ const onUserLeft = (id) => {
 * That function is called when connection is established successfully
 */
 const onConnectionSuccess = () => {
-  room = connection.initJitsiConference('telluria', confOptions);
+  _isConnected = true;
+}
+
+const joinRoom = (roomId) => {
+  if (!_isConnected)
+    return;
+
+  room = _connection.initJitsiConference(_roomId, _confOptions);
   room.setStartMutedPolicy({ audio: true, video: true });
   room.on(JitsiMeetJS.events.conference.TRACK_ADDED, onRemoteTrack);
   room.on(JitsiMeetJS.events.conference.TRACK_REMOVED, track => {
@@ -172,7 +181,7 @@ const onConnectionSuccess = () => {
     JitsiMeetJS.events.conference.CONFERENCE_JOINED,
     onConferenceJoined);
   room.on(JitsiMeetJS.events.conference.USER_JOINED, id => {
-    console.log('user join');
+    console.log('user join:' + id);
     remoteTracks[id] = [];
   });
   room.on(JitsiMeetJS.events.conference.USER_LEFT, onUserLeft);
@@ -210,13 +219,13 @@ const onDeviceListChanged = (devices) => {
 */
 const disconnect = () => {
   console.log('disconnect!');
-  connection.removeEventListener(
+  _connection.removeEventListener(
     JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
     onConnectionSuccess);
-  connection.removeEventListener(
+  _connection.removeEventListener(
     JitsiMeetJS.events.connection.CONNECTION_FAILED,
     onConnectionFailed);
-  connection.removeEventListener(
+  _connection.removeEventListener(
     JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
     disconnect);
 }
@@ -228,23 +237,23 @@ let isVideo = true;
 */
 const switchVideo = () => { // eslint-disable-line no-unused-vars
   isVideo = !isVideo;
-  if (localTracks[1]) {
-    localTracks[1].dispose();
-    localTracks.pop();
+  if (_localTracks[1]) {
+    _localTracks[1].dispose();
+    _localTracks.pop();
   }
   JitsiMeetJS.createLocalTracks({
     devices: [isVideo ? 'video' : 'desktop']
   })
     .then(tracks => {
-      localTracks.push(tracks[0]);
-      localTracks[1].addEventListener(
+      _localTracks.push(tracks[0]);
+      _localTracks[1].addEventListener(
         JitsiMeetJS.events.track.TRACK_MUTE_CHANGED,
         () => console.log('local track muted'));
-      localTracks[1].addEventListener(
+      _localTracks[1].addEventListener(
         JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED,
         () => console.log('local track stoped'));
       // localTracks[1].attach($('#localVideo1')[0]);
-      room.addTrack(localTracks[1]);
+      room.addTrack(_localTracks[1]);
     })
     .catch(error => console.log(error));
 }
@@ -300,15 +309,15 @@ if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
 }
 
 const startJitsiConnection = () => {
-  connection = new JitsiMeetJS.JitsiConnection(null, null, options);
+  _connection = new JitsiMeetJS.JitsiConnection(null, null, _options);
 
-  connection.addEventListener(
+  _connection.addEventListener(
     JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
     onConnectionSuccess);
-  connection.addEventListener(
+  _connection.addEventListener(
     JitsiMeetJS.events.connection.CONNECTION_FAILED,
     onConnectionFailed);
-  connection.addEventListener(
+  _connection.addEventListener(
     JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
     disconnect);
 
@@ -316,14 +325,19 @@ const startJitsiConnection = () => {
     JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
     onDeviceListChanged);
 
-  connection.connect();
+  _connection.connect();
 }
 
-const createLocalAudioTracks = (callback = null) => {
+const createLocalAudioTracks = (roomId, callback = null) => {
+  if (_isJoined && roomId !== _roomId) {
+    leaveRoom();
+  }
+  _roomId = roomId;
+
   JitsiMeetJS.createLocalTracks({ devices: ['audio'/*, 'video'*/] })
     .then(tracks => {
       onLocalTracks(tracks);
-      startJitsiConnection();
+      joinRoom(roomId);
       if (callback) callback(true);
     })
     .catch(error => {
@@ -331,6 +345,8 @@ const createLocalAudioTracks = (callback = null) => {
       if (callback) callback(false);
     });
 }
+
+startJitsiConnection();
 /*---- JITST END ----*/
 /* ******************************************************************** */
 
@@ -400,36 +416,38 @@ export const isMicrophoneBlocked = async () => {
     });
 }
 
-export const requestPermissionToMicrophone = callback => {
-  createLocalAudioTracks(callback);
+export const requestPermissionToMicrophone = (roomId, callback) => {
+  createLocalAudioTracks(roomId, callback);
 };
 
 export const leaveRoom = () => {
-  for (let i = 0; i < localTracks.length; i++) {
-    localTracks[i].dispose();
+  const previousRoomId = _roomId
+  for (let i = 0; i < _localTracks.length; i++) {
+    _localTracks[i].dispose();
   }
   room.leave().then(() => {
-    isJoined = false;
-    Object.keys(_onLeaveRoomCallbacks).forEach(id => {
-      _onLeaveRoomCallbacks[id]();
-    });
+    if (previousRoomId === _roomId) {
+      _isJoined = false;
+      Object.keys(_onLeaveRoomCallbacks).forEach(id => {
+        _onLeaveRoomCallbacks[id]();
+      });
+    }
   });
-  connection.disconnect();
 }
 
-export const toogleMute = () => {
-  if (!isJoined) {
+export const toogleMute = (roomId) => {
+  if (!_isJoined) {
     const id = uuid();
     registerOnJoinRoomCallback(id, () => {
       unregisterOnJoinRoomCallback(id);
-      localTracks.forEach(track => track.unmute());
+      _localTracks.forEach(track => track.unmute());
     });
 
-    createLocalAudioTracks();
+    createLocalAudioTracks(roomId);
     return;
   }
 
-  localTracks.forEach(track => {
+  _localTracks.forEach(track => {
     if (track.isMuted())
       track.unmute();
     else

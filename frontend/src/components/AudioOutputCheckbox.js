@@ -7,11 +7,16 @@ import VolumeIcon from '@material-ui/icons/VolumeUp';
 import VolumeOffIcon from '@material-ui/icons/VolumeOff';
 
 import {
+  CurrentUserPropType,
+  CurrentRoomPropType
+} from "../morpheus/store/models";
+
+import {
   leaveRoom,
   requestPermissionToMicrophone
 } from "../usermedia";
 
-const AudioOutputCheckbox = ({ isDisabled }) => {
+const AudioOutputCheckbox = ({ isDisabled, currentUser, currentRoom }) => {
   return (
     <Tooltip title={`${isDisabled ? "Enable" : "Disable"} audio output`}>
       <Checkbox
@@ -20,7 +25,7 @@ const AudioOutputCheckbox = ({ isDisabled }) => {
         checked={isDisabled}
         onChange={event => {
           if (isDisabled) {
-            requestPermissionToMicrophone();
+            requestPermissionToMicrophone(currentRoom.id);
           } else {
             leaveRoom();
           }
@@ -32,7 +37,9 @@ const AudioOutputCheckbox = ({ isDisabled }) => {
 };
 
 AudioOutputCheckbox.propTypes = {
-  isDisabled: PropTypes.bool.isRequired
+  isDisabled: PropTypes.bool.isRequired,
+  currentUser: CurrentUserPropType,
+  currentRoom: CurrentRoomPropType
 };
 
 const mapDispatchToProps = {};

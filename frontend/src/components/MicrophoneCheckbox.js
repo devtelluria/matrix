@@ -8,6 +8,11 @@ import MicIcon from '@material-ui/icons/Mic';
 import MicOffIcon from '@material-ui/icons/MicOff';
 
 import {
+  CurrentUserPropType,
+  CurrentRoomPropType
+} from "../morpheus/store/models";
+
+import {
   isMicrophonePermissionGranted,
   isMicrophoneBlocked,
   browserHasSupport,
@@ -17,13 +22,23 @@ import {
   registerOnLeaveRoomCallback,
   registerOnLocalTrackMuteChangedCallback
 } from "../usermedia";
+
 import { showMessageDialog } from "../morpheus/store/actions";
 
-const MicrophoneCheckbox = ({ onChange, toggleAudioOutput, openMessageDialog, isDisabled, isAudioOutputDisabled }) => {
+let _previousRoomId = '';
+
+const MicrophoneCheckbox = ({
+  onChange, toggleAudioOutput, openMessageDialog,
+  isDisabled, isAudioOutputDisabled, currentUser, currentRoom
+}) => {
   const [isAllowed, toggleAllowed] = useState(false);
   const [isBlocked, toggleBlocked] = useState(false);
 
   isMicrophonePermissionGranted().then(allowed => {
+    if (allowed && _previousRoomId !== currentRoom.id) {
+      _previousRoomId = currentRoom.id;
+      requestPermissionToMicrophone(currentRoom.id);
+    }
     toggleAllowed(allowed);
   });
   isMicrophoneBlocked().then(blocked => {
@@ -63,8 +78,7 @@ const MicrophoneCheckbox = ({ onChange, toggleAudioOutput, openMessageDialog, is
                 "You must unlock your microphone in your browser settings."
               );
             } else {
-              requestPermissionToMicrophone(hasPermission => {
-                //toggleAudioOutput(!hasPermission);
+              requestPermissionToMicrophone(currentRoom.id, hasPermission => {
                 toggleAllowed(hasPermission);
                 toggleBlocked(!hasPermission);
               });
@@ -85,7 +99,7 @@ const MicrophoneCheckbox = ({ onChange, toggleAudioOutput, openMessageDialog, is
         checkedIcon={<MicOffIcon />}
         checked={isDisabled || isAudioOutputDisabled}
         onChange={() => {
-          toogleMute();
+          toogleMute(currentRoom.id);
         }}
       />
     </Tooltip>
@@ -97,7 +111,9 @@ MicrophoneCheckbox.propTypes = {
   toggleAudioOutput: PropTypes.func.isRequired,
   openMessageDialog: PropTypes.func.isRequired,
   isDisabled: PropTypes.bool.isRequired,
-  isAudioOutputDisabled: PropTypes.bool.isRequired
+  isAudioOutputDisabled: PropTypes.bool.isRequired,
+  currentUser: CurrentUserPropType,
+  currentRoom: CurrentRoomPropType
 };
 
 const mapDispatchToProps = {

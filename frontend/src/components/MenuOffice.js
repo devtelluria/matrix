@@ -13,6 +13,11 @@ import NotificationCheckbox from "./NotificationCheckbox";
 import MicrophoneCheckbox from "./MicrophoneCheckbox";
 import AudioOutputCheckbox from "./AudioOutputCheckbox";
 
+import {
+  CurrentUserPropType,
+  CurrentRoomPropType
+} from "../morpheus/store/models";
+
 const useStyles = makeStyles(theme => ({
   search: {
     position: "relative",
@@ -58,7 +63,9 @@ const MenuOffice = ({
   onChangeSettings,
   onChangeTheme,
   filter,
-  settings
+  settings,
+  currentUser,
+  currentRoom
 }) => {
   const classes = useStyles();
   const commitSearch = debounce(onChangeFilter, 300);
@@ -83,6 +90,8 @@ const MenuOffice = ({
       </div>
 
       <MicrophoneCheckbox
+        currentUser={currentUser}
+        currentRoom={currentRoom}
         isDisabled={settings.microphoneDisabled}
         isAudioOutputDisabled={settings.audioOutputDisabled}
         onChange={disabled => {
@@ -94,6 +103,8 @@ const MenuOffice = ({
       />
 
       <AudioOutputCheckbox
+        currentUser={currentUser}
+        currentRoom={currentRoom}
         isDisabled={settings.audioOutputDisabled}
       />
 
@@ -130,15 +141,19 @@ MenuOffice.propTypes = {
     microphoneDisabled: PropTypes.bool,
     cameraDisabled: PropTypes.bool,
     audioOutputDisabled: PropTypes.bool
-  })
+  }),
+  currentUser: CurrentUserPropType,
+  currentRoom: CurrentRoomPropType
 };
 
 MenuOffice.defaultProps = {
-  onChangeFilter: () => {},
-  onChangeSettings: () => {},
-  onChangeTheme: () => {},
+  onChangeFilter: () => { },
+  onChangeSettings: () => { },
+  onChangeTheme: () => { },
   filter: {},
-  settings: {}
+  settings: {},
+  currentUser: {},
+  currentRoom: {}
 };
 
 export default MenuOffice;
