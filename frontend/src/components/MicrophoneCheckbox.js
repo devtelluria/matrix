@@ -35,7 +35,7 @@ const MicrophoneCheckbox = ({
   const [isBlocked, toggleBlocked] = useState(false);
 
   isMicrophonePermissionGranted().then(allowed => {
-    if (allowed && _previousRoomId !== currentRoom.id) {
+    if (currentRoom && allowed && _previousRoomId !== currentRoom.id) {
       _previousRoomId = currentRoom.id;
       requestPermissionToMicrophone(currentRoom.id);
     }
