@@ -13,10 +13,12 @@ import {
 
 import {
   leaveRoom,
-  requestPermissionToMicrophone
+  requestPermissionToMicrophone,
+  parseConferenceName
 } from "../usermedia";
 
 const AudioOutputCheckbox = ({ isDisabled, currentUser, currentRoom }) => {
+  const conferenceName = parseConferenceName(currentRoom);
   return (
     <Tooltip title={`${isDisabled ? "Enable" : "Disable"} audio output`}>
       <Checkbox
@@ -25,11 +27,10 @@ const AudioOutputCheckbox = ({ isDisabled, currentUser, currentRoom }) => {
         checked={isDisabled}
         onChange={event => {
           if (isDisabled) {
-            requestPermissionToMicrophone(currentRoom.id);
+            requestPermissionToMicrophone(conferenceName);
           } else {
             leaveRoom();
           }
-          //onChange(event);
         }}
       />
     </Tooltip>

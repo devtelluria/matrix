@@ -32,7 +32,7 @@ let room = null;
 let _localTracks = [];
 const remoteTracks = {};
 
-let _roomId = '';
+let _conferenceName = '';
 let _audioSources = {};
 let _videoSources = {};
 
@@ -132,7 +132,7 @@ const onRemoteTrack = (track) => {
 * That function is executed when the conference is joined
 */
 const onConferenceJoined = () => {
-  console.log('conference joined!');
+  console.log('conference joined: ' + _conferenceName);
   _isJoined = true;
   for (let i = 0; i < _localTracks.length; i++) {
     _localTracks[i].mute();
@@ -167,11 +167,11 @@ const onConnectionSuccess = () => {
   _isConnected = true;
 }
 
-const joinRoom = (roomId) => {
+const joinRoom = (conferenceName) => {
   if (!_isConnected)
     return;
 
-  room = _connection.initJitsiConference(_roomId, _confOptions);
+  room = _connection.initJitsiConference(conferenceName, _confOptions);
   room.setStartMutedPolicy({ audio: true, video: true });
   room.on(JitsiMeetJS.events.conference.TRACK_ADDED, onRemoteTrack);
   room.on(JitsiMeetJS.events.conference.TRACK_REMOVED, track => {
@@ -328,16 +328,16 @@ const startJitsiConnection = () => {
   _connection.connect();
 }
 
-const createLocalAudioTracks = (roomId, callback = null) => {
-  if (_isJoined && roomId !== _roomId) {
+const createLocalAudioTracks = (conferenceName, callback = null) => {
+  if (_isJoined && conferenceName !== _conferenceName) {
     leaveRoom();
   }
-  _roomId = roomId;
+  _conferenceName = conferenceName;
 
   JitsiMeetJS.createLocalTracks({ devices: ['audio'/*, 'video'*/] })
     .then(tracks => {
       onLocalTracks(tracks);
-      joinRoom(roomId);
+      joinRoom(conferenceName);
       if (callback) callback(true);
     })
     .catch(error => {
@@ -416,18 +416,18 @@ export const isMicrophoneBlocked = async () => {
     });
 }
 
-export const requestPermissionToMicrophone = (roomId, callback) => {
-  createLocalAudioTracks(roomId, callback);
+export const requestPermissionToMicrophone = (conferenceName, callback) => {
+  createLocalAudioTracks(conferenceName, callback);
 };
 
 export const leaveRoom = () => {
-  const previousRoomId = _roomId
+  const previousConferenceName = _conferenceName
   _isJoined = false;
   for (let i = 0; i < _localTracks.length; i++) {
     _localTracks[i].dispose();
   }
   room.leave().then(() => {
-    if (previousRoomId === _roomId) {
+    if (previousConferenceName === _conferenceName) {
       Object.keys(_onLeaveRoomCallbacks).forEach(id => {
         _onLeaveRoomCallbacks[id]();
       });
@@ -435,7 +435,7 @@ export const leaveRoom = () => {
   });
 }
 
-export const toogleMute = (roomId) => {
+export const toogleMute = (conferenceName) => {
   if (!_isJoined) {
     const id = uuid();
     registerOnJoinRoomCallback(id, () => {
@@ -443,7 +443,7 @@ export const toogleMute = (roomId) => {
       _localTracks.forEach(track => track.unmute());
     });
 
-    createLocalAudioTracks(roomId);
+    createLocalAudioTracks(conferenceName);
     return;
   }
 
@@ -453,4 +453,11 @@ export const toogleMute = (roomId) => {
     else
       track.mute();
   });
+}
+
+export const parseConferenceName = (room) => {
+  if (!room || !room.name) return '';
+  return room.name.trim().toLowerCase()
+    .split(' ').map(t => t.trim()).join('-')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "");;
 }

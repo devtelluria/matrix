@@ -20,12 +20,13 @@ import {
   toogleMute,
   registerOnJoinRoomCallback,
   registerOnLeaveRoomCallback,
-  registerOnLocalTrackMuteChangedCallback
+  registerOnLocalTrackMuteChangedCallback,
+  parseConferenceName
 } from "../usermedia";
 
 import { showMessageDialog } from "../morpheus/store/actions";
 
-let _previousRoomId = '';
+let _previousConferenceName = '';
 
 const MicrophoneCheckbox = ({
   onChange, toggleAudioOutput, openMessageDialog,
@@ -34,10 +35,12 @@ const MicrophoneCheckbox = ({
   const [isAllowed, toggleAllowed] = useState(false);
   const [isBlocked, toggleBlocked] = useState(false);
 
+  const conferenceName = parseConferenceName(currentRoom);
+
   isMicrophonePermissionGranted().then(allowed => {
-    if (currentRoom && allowed && _previousRoomId !== currentRoom.id) {
-      _previousRoomId = currentRoom.id;
-      requestPermissionToMicrophone(currentRoom.id);
+    if (allowed && _previousConferenceName !== conferenceName) {
+      _previousConferenceName = conferenceName;
+      requestPermissionToMicrophone(conferenceName);
     }
     toggleAllowed(allowed);
   });
@@ -78,7 +81,7 @@ const MicrophoneCheckbox = ({
                 "You must unlock your microphone in your browser settings."
               );
             } else {
-              requestPermissionToMicrophone(currentRoom.id, hasPermission => {
+              requestPermissionToMicrophone(conferenceName, hasPermission => {
                 toggleAllowed(hasPermission);
                 toggleBlocked(!hasPermission);
               });
@@ -99,7 +102,7 @@ const MicrophoneCheckbox = ({
         checkedIcon={<MicOffIcon />}
         checked={isDisabled || isAudioOutputDisabled}
         onChange={() => {
-          toogleMute(currentRoom.id);
+          toogleMute(conferenceName);
         }}
       />
     </Tooltip>
