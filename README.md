@@ -160,7 +160,7 @@ If you prefer, you can run **#matrix** on GCP:
 
 If you prefer, you can run **#matrix** in Heroku:
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/ResultadosDigitais/matrix)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://https://github.com/devtelluria/matrix/tree/develop-telluria)
 
 ### On Kubernetes
 
