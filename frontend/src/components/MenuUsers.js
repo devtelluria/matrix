@@ -90,6 +90,8 @@ const MenuUsers = ({
             name={user.name}
             avatar={user.avatar}
             roomName={user.roomName}
+            microphoneActive={user.microphoneActive}
+            audioActive={user.audioActive}
           />
         );
       })}

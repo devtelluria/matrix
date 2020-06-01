@@ -459,5 +459,5 @@ export const parseConferenceName = (room) => {
   if (!room || !room.name) return '';
   return room.name.trim().toLowerCase()
     .split(' ').map(t => t.trim()).join('-')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, "");;
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "");
 }

@@ -9,6 +9,10 @@ import ListItemSecondaryAction from "@material-ui/core/ListItemSecondaryAction";
 import Avatar from "@material-ui/core/Avatar";
 import IconButton from "@material-ui/core/IconButton";
 import PhoneForwardedIcon from "@material-ui/icons/PhoneForwarded";
+import MicIcon from '@material-ui/icons/Mic';
+import MicOffIcon from '@material-ui/icons/MicOff';
+import VolumeUpIcon from '@material-ui/icons/VolumeUp';
+import VolumeOffIcon from '@material-ui/icons/VolumeOff';
 
 const useStyles = makeStyles(() => ({
   avatarInMeeting: {
@@ -33,7 +37,9 @@ const MenuUsersItem = ({
   inMeeting,
   name,
   avatar,
-  roomName
+  roomName,
+  microphoneActive,
+  audioActive
 }) => {
   const classes = useStyles();
 
@@ -46,6 +52,16 @@ const MenuUsersItem = ({
           })}
         >
           <Avatar alt={name} src={avatar} />
+          {
+            microphoneActive
+              ? <MicIcon fontSize="small" />
+              : <MicOffIcon fontSize="small" style={{ opacity: 0.4 }} />
+          }
+          {
+            audioActive
+              ? <VolumeUpIcon fontSize="small" />
+              : <VolumeOffIcon fontSize="small" style={{ opacity: 0.4 }} />
+          }
         </div>
       </ListItemAvatar>
       <ListItemText primary={name} secondary={roomName} />
@@ -66,16 +82,20 @@ MenuUsersItem.propTypes = {
   inMeeting: PropTypes.bool,
   name: PropTypes.string,
   avatar: PropTypes.string,
-  roomName: PropTypes.string
+  roomName: PropTypes.string,
+  microphoneActive: PropTypes.bool,
+  audioActive: PropTypes.bool
 };
 
 MenuUsersItem.defaultProps = {
-  onInviteUser: () => {},
+  onInviteUser: () => { },
   showInviteAction: false,
   inMeeting: false,
   name: "",
   avatar: "",
-  roomName: ""
+  roomName: "",
+  microphoneActive: false,
+  audioActive: false
 };
 
 export default MenuUsersItem;

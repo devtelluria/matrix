@@ -8,6 +8,13 @@ import MicIcon from '@material-ui/icons/Mic';
 import MicOffIcon from '@material-ui/icons/MicOff';
 
 import {
+  emitEnableMicrophone,
+  emitDisableMicrophone,
+  emitEnableAudio,
+  emitDisableAudio
+} from "../morpheus/socket";
+
+import {
   CurrentUserPropType,
   CurrentRoomPropType
 } from "../morpheus/store/models";
@@ -50,14 +57,20 @@ const MicrophoneCheckbox = ({
 
   registerOnJoinRoomCallback('MicrophoneCheckbox', () => {
     toggleAudioOutput(false);
+    emitEnableAudio();
   });
 
   registerOnLeaveRoomCallback('MicrophoneCheckbox', () => {
     toggleAudioOutput(true);
+    emitDisableAudio();
   });
 
   registerOnLocalTrackMuteChangedCallback('MicrophoneCheckbox', isMuted => {
     onChange(isMuted);
+    if (isMuted)
+      emitDisableMicrophone();
+    else
+      emitEnableMicrophone();
   });
 
   if (!browserHasSupport()) {

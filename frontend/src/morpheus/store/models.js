@@ -14,7 +14,9 @@ export const UsersPropType = PropTypes.arrayOf(
     avatar: PropTypes.string.isRequired,
     inMeet: PropTypes.bool.isRequired,
     roomId: PropTypes.string.isRequired,
-    roomName: PropTypes.string.isRequired
+    roomName: PropTypes.string.isRequired,
+    microphoneActive: PropTypes.bool.isRequired,
+    audioActive: PropTypes.bool.isRequired
   })
 );
 
