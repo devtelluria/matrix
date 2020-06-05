@@ -4,8 +4,8 @@ import PropTypes from "prop-types";
 import Checkbox from "@material-ui/core/Checkbox";
 import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
-import MicIcon from '@material-ui/icons/Mic';
-import MicOffIcon from '@material-ui/icons/MicOff';
+import MicIcon from "@material-ui/icons/Mic";
+import MicOffIcon from "@material-ui/icons/MicOff";
 
 import {
   emitEnableMicrophone,
@@ -33,7 +33,7 @@ import {
 
 import { showMessageDialog } from "../morpheus/store/actions";
 
-let _previousConferenceName = '';
+let previousConferenceName = "";
 
 const MicrophoneCheckbox = ({
   onChange, toggleAudioOutput, openMessageDialog,
@@ -45,8 +45,8 @@ const MicrophoneCheckbox = ({
   const conferenceName = parseConferenceName(currentRoom);
 
   isMicrophonePermissionGranted().then(allowed => {
-    if (allowed && _previousConferenceName !== conferenceName) {
-      _previousConferenceName = conferenceName;
+    if (allowed && previousConferenceName !== conferenceName) {
+      previousConferenceName = conferenceName;
       requestPermissionToMicrophone(conferenceName);
     }
     toggleAllowed(allowed);
@@ -55,17 +55,17 @@ const MicrophoneCheckbox = ({
     toggleBlocked(blocked);
   });
 
-  registerOnJoinRoomCallback('MicrophoneCheckbox', () => {
+  registerOnJoinRoomCallback("MicrophoneCheckbox", () => {
     toggleAudioOutput(false);
     emitEnableAudio();
   });
 
-  registerOnLeaveRoomCallback('MicrophoneCheckbox', () => {
+  registerOnLeaveRoomCallback("MicrophoneCheckbox", () => {
     toggleAudioOutput(true);
     emitDisableAudio();
   });
 
-  registerOnLocalTrackMuteChangedCallback('MicrophoneCheckbox', isMuted => {
+  registerOnLocalTrackMuteChangedCallback("MicrophoneCheckbox", isMuted => {
     onChange(isMuted);
     if (isMuted)
       emitDisableMicrophone();
@@ -128,8 +128,8 @@ MicrophoneCheckbox.propTypes = {
   openMessageDialog: PropTypes.func.isRequired,
   isDisabled: PropTypes.bool.isRequired,
   isAudioOutputDisabled: PropTypes.bool.isRequired,
-  currentUser: CurrentUserPropType,
-  currentRoom: CurrentRoomPropType
+  currentUser: CurrentUserPropType.isRequired,
+  currentRoom: CurrentRoomPropType.isRequired
 };
 
 const mapDispatchToProps = {

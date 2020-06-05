@@ -1,63 +1,119 @@
+/* eslint-disable no-plusplus */
+// eslint-disable-next-line import/no-extraneous-dependencies
 import uuid from "uuid/v4";
+import * as jquery from "./jitsi/jquery-2.1.1.min";
+import JitsiMeetJS from "./jitsi/lib-jitsi-meet.min";
+
+const onLocalTrackMuteChangedCallbacks = {};
+const onJoinRoomCallbacks = {};
+const onLeaveRoomCallbacks = {};
+
+export const registerOnLocalTrackMuteChangedCallback = (id, callback) => {
+  onLocalTrackMuteChangedCallbacks[id] = callback;
+}
+export const unregisterOnLocalTrackMuteChangedCallback = (id) => {
+  delete onLocalTrackMuteChangedCallbacks[id];
+}
+export const registerOnJoinRoomCallback = (id, callback) => {
+  onJoinRoomCallbacks[id] = callback;
+}
+export const unregisterOnJoinRoomCallback = (id) => {
+  delete onJoinRoomCallbacks[id];
+}
+export const registerOnLeaveRoomCallback = (id, callback) => {
+  onLeaveRoomCallbacks[id] = callback;
+}
+export const unregisterOnLeaveRoomCallback = (id) => {
+  delete onLeaveRoomCallbacks[id];
+}
+
+export const browserHasSupport = () => {
+  try {
+    return !!navigator.mediaDevices;
+  } catch (e) {
+    return false;
+  }
+}
+
+export const isMicrophonePermissionGranted = async () => {
+  if (!browserHasSupport()) {
+    return false;
+  }
+
+  return navigator.permissions.query({ name: "microphone" })
+    .then(({ state }) => {
+      return (state === "granted");
+    });
+}
+
+export const isMicrophoneBlocked = async () => {
+  if (!browserHasSupport()) {
+    return true;
+  }
+
+  return navigator.permissions.query({ name: "microphone" })
+    .then(({ state }) => {
+      return (state === "denied");
+    });
+}
+
 /* ******************************************************************** */
-/*---- JITST BEGIN ----*/
-import * as jquery from './jitsi/jquery-2.1.1.min.js';
+/* ---- JITST BEGIN ----*/
 window.$ = jquery;
-import JitsiMeetJS from './jitsi/lib-jitsi-meet.min.js';
 
-const _backendUrl = '209-50-53-252.us-chi1.upcloud.host';
+const BACKEND_URL = "209-50-56-208.us-chi1.upcloud.host";
 
-const _options = {
+const OPTIONS = {
   hosts: {
-    domain: `meet.jitsi`,
-    muc: `muc.meet.jitsi` // FIXME: use XEP-0030
+    domain: "meet.jitsi",
+    muc: "muc.meet.jitsi" // FIXME: use XEP-0030
   },
-  //serviceUrl: `https://${backendUrl}/http-bind`,
+  // serviceUrl: `https://${backendUrl}/http-bind`,
 
-  bosh: `https://${_backendUrl}/http-bind`, // FIXME: use xep-0156 for that
+  bosh: `https://${BACKEND_URL}/http-bind`, // FIXME: use xep-0156 for that
 
   // The name of client node advertised in XEP-0115 'c' stanza
-  clientNode: 'https://jitsi.org/jitsimeet'
+  clientNode: "https://jitsi.org/jitsimeet"
 };
 
-const _confOptions = {
+const CONFIG_OPTIONS = {
   openBridgeChannel: true
 };
 
-let _connection = null;
-let _isConnected = false;
-let _isJoined = false;
-let room = null;
+let connection = null;
+let isConnected = false;
+let isJoined = false;
+let currentRoom = null;
 
-let _localTracks = [];
+let localTracks = [];
 const remoteTracks = {};
 
-let _conferenceName = '';
-let _audioSources = {};
-let _videoSources = {};
+let currentConferenceName = "";
+const audioSources = {};
+// const videoSources = {};
 
 /**
 * Handles local tracks.
 * @param tracks Array with JitsiTrack objects
 */
 const onLocalTracks = (tracks) => {
-  _localTracks = tracks;
-  for (let i = 0; i < _localTracks.length; i++) {
-    _localTracks[i].addEventListener(
+  localTracks = tracks;
+  for (let i = 0; i < localTracks.length; i++) {
+    localTracks[i].addEventListener(
       JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED,
       audioLevel => console.log(`Audio Level local: ${audioLevel}`));
-    _localTracks[i].addEventListener(
+    localTracks[i].addEventListener(
       JitsiMeetJS.events.track.TRACK_MUTE_CHANGED,
       (track) => {
-        Object.keys(_onLocalTrackMuteChangedCallbacks).forEach(id => {
-          _onLocalTrackMuteChangedCallbacks[id](track.isMuted());
+        Object.keys(onLocalTrackMuteChangedCallbacks).forEach(id => {
+          onLocalTrackMuteChangedCallbacks[id](track.isMuted());
         });
-        console.log('local track mute changed: ' + track.isMuted());
+        console.log(`local track mute changed: ${  track.isMuted()}`);
       });
-    _localTracks[i].addEventListener(
+    localTracks[i].addEventListener(
       JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED,
-      () => console.log('local track stoped'));
-    _localTracks[i].addEventListener(
+      () => console.log("local track stoped"));
+    localTracks[i].addEventListener(
       JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED,
       deviceId =>
         console.log(
@@ -70,8 +126,8 @@ const onLocalTracks = (tracks) => {
     //   //   `<audio autoplay='1' muted='true' id='localAudio${i}' />`);
     //   // localTracks[i].attach($(`#localAudio${i}`)[0]);
     // }
-    if (_isJoined) {
-      room.addTrack(_localTracks[i]);
+    if (isJoined) {
+      currentRoom.addTrack(localTracks[i]);
     }
   }
 }
@@ -89,24 +145,24 @@ const onRemoteTrack = (track) => {
   if (!remoteTracks[participant]) {
     remoteTracks[participant] = [];
   }
-  const idx = remoteTracks[participant].push(track);
+  remoteTracks[participant].push(track);
 
   track.addEventListener(
     JitsiMeetJS.events.track.TRACK_AUDIO_LEVEL_CHANGED,
     audioLevel => console.log(`Audio Level remote: ${audioLevel}`));
   track.addEventListener(
     JitsiMeetJS.events.track.TRACK_MUTE_CHANGED,
-    () => console.log('remote track muted'));
+    () => console.log("remote track muted"));
   track.addEventListener(
     JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED,
-    () => console.log('remote track stoped'));
+    () => console.log("remote track stoped"));
   track.addEventListener(JitsiMeetJS.events.track.TRACK_AUDIO_OUTPUT_CHANGED,
     deviceId =>
       console.log(
         `track audio output device was changed to ${deviceId}`));
 
-  if (track.getType() === 'video') {
-    /*const videoSource = new Video();
+  if (track.getType() === "video") {
+    /* const videoSource = new Video();
     videoSource.autoplay = true;
 
     if (!videoSources[participant]) {
@@ -114,16 +170,16 @@ const onRemoteTrack = (track) => {
     }
 
     videoSources[participant].push(videoSource);
-    track.attach(videoSource);*/
+    track.attach(videoSource); */
   } else {
     const audioSource = new Audio();
     audioSource.autoplay = true;
 
-    if (!_audioSources[participant]) {
-      _audioSources[participant] = [];
+    if (!audioSources[participant]) {
+      audioSources[participant] = [];
     }
 
-    _audioSources[participant].push(audioSource);
+    audioSources[participant].push(audioSource);
     track.attach(audioSource);
   }
 }
@@ -132,15 +188,15 @@ const onRemoteTrack = (track) => {
 * That function is executed when the conference is joined
 */
 const onConferenceJoined = () => {
-  console.log('conference joined: ' + _conferenceName);
-  _isJoined = true;
-  for (let i = 0; i < _localTracks.length; i++) {
-    _localTracks[i].mute();
-    room.addTrack(_localTracks[i]);
+  console.log(`conference joined: ${  currentConferenceName}`);
+  isJoined = true;
+  for (let i = 0; i < localTracks.length; i++) {
+    localTracks[i].mute();
+    currentRoom.addTrack(localTracks[i]);
   }
 
-  Object.keys(_onJoinRoomCallbacks).forEach(id => {
-    _onJoinRoomCallbacks[id]();
+  Object.keys(onJoinRoomCallbacks).forEach(id => {
+    onJoinRoomCallbacks[id]();
   });
 }
 
@@ -149,14 +205,14 @@ const onConferenceJoined = () => {
 * @param id
 */
 const onUserLeft = (id) => {
-  console.log('user left');
+  console.log("user left");
   if (!remoteTracks[id]) {
     return;
   }
   const tracks = remoteTracks[id];
 
   for (let i = 0; i < tracks.length; i++) {
-    tracks[i].detach(_audioSources[id][i]);
+    tracks[i].detach(audioSources[id][i]);
   }
 }
 
@@ -164,68 +220,68 @@ const onUserLeft = (id) => {
 * That function is called when connection is established successfully
 */
 const onConnectionSuccess = () => {
-  _isConnected = true;
+  isConnected = true;
 }
 
 const joinRoom = (conferenceName) => {
-  if (!_isConnected)
+  if (!isConnected)
     return;
 
-  room = _connection.initJitsiConference(conferenceName, _confOptions);
-  room.setStartMutedPolicy({ audio: true, video: true });
-  room.on(JitsiMeetJS.events.conference.TRACK_ADDED, onRemoteTrack);
-  room.on(JitsiMeetJS.events.conference.TRACK_REMOVED, track => {
+  currentRoom = connection.initJitsiConference(conferenceName, CONFIG_OPTIONS);
+  currentRoom.setStartMutedPolicy({ audio: true, video: true });
+  currentRoom.on(JitsiMeetJS.events.conference.TRACK_ADDED, onRemoteTrack);
+  currentRoom.on(JitsiMeetJS.events.conference.TRACK_REMOVED, track => {
     console.log(`track removed!!!${track}`);
   });
-  room.on(
+  currentRoom.on(
     JitsiMeetJS.events.conference.CONFERENCE_JOINED,
     onConferenceJoined);
-  room.on(JitsiMeetJS.events.conference.USER_JOINED, id => {
-    console.log('user join:' + id);
+  currentRoom.on(JitsiMeetJS.events.conference.USER_JOINED, id => {
+    console.log(`user join:${  id}`);
     remoteTracks[id] = [];
   });
-  room.on(JitsiMeetJS.events.conference.USER_LEFT, onUserLeft);
-  room.on(JitsiMeetJS.events.conference.TRACK_MUTE_CHANGED, track => {
+  currentRoom.on(JitsiMeetJS.events.conference.USER_LEFT, onUserLeft);
+  currentRoom.on(JitsiMeetJS.events.conference.TRACK_MUTE_CHANGED, track => {
     console.log(`${track.getType()} - ${track.isMuted()}`);
   });
-  room.on(
+  currentRoom.on(
     JitsiMeetJS.events.conference.DISPLAY_NAME_CHANGED,
     (userID, displayName) => console.log(`${userID} - ${displayName}`));
-  room.on(
+  currentRoom.on(
     JitsiMeetJS.events.conference.TRACK_AUDIO_LEVEL_CHANGED,
     (userID, audioLevel) => console.log(`${userID} - ${audioLevel}`));
-  room.on(
+  currentRoom.on(
     JitsiMeetJS.events.conference.PHONE_NUMBER_CHANGED,
-    () => console.log(`${room.getPhoneNumber()} - ${room.getPhonePin()}`));
-  room.join();
+    () => console.log(`${currentRoom.getPhoneNumber()} - ${currentRoom.getPhonePin()}`));
+  currentRoom.join();
 }
 
 /**
 * This function is called when the connection fail.
 */
 const onConnectionFailed = () => {
-  console.error('Connection Failed!');
+  console.error("Connection Failed!");
 }
 
 /**
 * This function is called when the connection fail.
 */
 const onDeviceListChanged = (devices) => {
-  console.info('current devices', devices);
+  console.info("current devices", devices);
 }
 
 /**
 * This function is called when we disconnect.
 */
 const disconnect = () => {
-  console.log('disconnect!');
-  _connection.removeEventListener(
+  console.log("disconnect!");
+  connection.removeEventListener(
     JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
     onConnectionSuccess);
-  _connection.removeEventListener(
+  connection.removeEventListener(
     JitsiMeetJS.events.connection.CONNECTION_FAILED,
     onConnectionFailed);
-  _connection.removeEventListener(
+  connection.removeEventListener(
     JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
     disconnect);
 }
@@ -237,23 +293,23 @@ let isVideo = true;
 */
 const switchVideo = () => { // eslint-disable-line no-unused-vars
   isVideo = !isVideo;
-  if (_localTracks[1]) {
-    _localTracks[1].dispose();
-    _localTracks.pop();
+  if (localTracks[1]) {
+    localTracks[1].dispose();
+    localTracks.pop();
   }
   JitsiMeetJS.createLocalTracks({
-    devices: [isVideo ? 'video' : 'desktop']
+    devices: [isVideo ? "video" : "desktop"]
   })
     .then(tracks => {
-      _localTracks.push(tracks[0]);
-      _localTracks[1].addEventListener(
+      localTracks.push(tracks[0]);
+      localTracks[1].addEventListener(
         JitsiMeetJS.events.track.TRACK_MUTE_CHANGED,
-        () => console.log('local track muted'));
-      _localTracks[1].addEventListener(
+        () => console.log("local track muted"));
+      localTracks[1].addEventListener(
         JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED,
-        () => console.log('local track stoped'));
+        () => console.log("local track stoped"));
       // localTracks[1].attach($('#localVideo1')[0]);
-      room.addTrack(_localTracks[1]);
+      currentRoom.addTrack(localTracks[1]);
     })
     .catch(error => console.log(error));
 }
@@ -271,17 +327,17 @@ const initOptions = {
   disableAudioLevels: true,
 
   // The ID of the jidesha extension for Chrome.
-  desktopSharingChromeExtId: 'mbocklcggfhnbahlnepmldehdhpjfcjp',
+  desktopSharingChromeExtId: "mbocklcggfhnbahlnepmldehdhpjfcjp",
 
   // Whether desktop sharing should be disabled on Chrome.
   desktopSharingChromeDisabled: false,
 
   // The media sources to use when using screen sharing with the Chrome
   // extension.
-  desktopSharingChromeSources: ['screen', 'window'],
+  desktopSharingChromeSources: ["screen", "window"],
 
   // Required version of Chrome extension
-  desktopSharingChromeMinExtVersion: '0.1',
+  desktopSharingChromeMinExtVersion: "0.1",
 
   // Whether desktop sharing should be disabled on Firefox.
   desktopSharingFirefoxDisabled: true
@@ -290,10 +346,10 @@ const initOptions = {
 JitsiMeetJS.setLogLevel(JitsiMeetJS.logLevels.ERROR);
 JitsiMeetJS.init(initOptions);
 
-if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
+if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable("output")) {
   JitsiMeetJS.mediaDevices.enumerateDevices(devices => {
     const audioOutputDevices
-      = devices.filter(d => d.kind === 'audiooutput');
+      = devices.filter(d => d.kind === "audiooutput");
     console.log(audioOutputDevices);
     if (audioOutputDevices.length > 1) {
       // $('#audioOutputSelect').html(
@@ -309,15 +365,15 @@ if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable('output')) {
 }
 
 const startJitsiConnection = () => {
-  _connection = new JitsiMeetJS.JitsiConnection(null, null, _options);
+  connection = new JitsiMeetJS.JitsiConnection(null, null, OPTIONS);
 
-  _connection.addEventListener(
+  connection.addEventListener(
     JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
     onConnectionSuccess);
-  _connection.addEventListener(
+  connection.addEventListener(
     JitsiMeetJS.events.connection.CONNECTION_FAILED,
     onConnectionFailed);
-  _connection.addEventListener(
+  connection.addEventListener(
     JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
     disconnect);
 
@@ -325,16 +381,31 @@ const startJitsiConnection = () => {
     JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
     onDeviceListChanged);
 
-  _connection.connect();
+  connection.connect();
+}
+
+export const leaveRoom = () => {
+  const previousConferenceName = currentConferenceName
+  isJoined = false;
+  for (let i = 0; i < localTracks.length; i++) {
+    localTracks[i].dispose();
+  }
+  currentRoom.leave().then(() => {
+    if (previousConferenceName === currentConferenceName) {
+      Object.keys(onLeaveRoomCallbacks).forEach(id => {
+        onLeaveRoomCallbacks[id]();
+      });
+    }
+  });
 }
 
 const createLocalAudioTracks = (conferenceName, callback = null) => {
-  if (_isJoined && conferenceName !== _conferenceName) {
+  if (isJoined && conferenceName !== currentConferenceName) {
     leaveRoom();
   }
-  _conferenceName = conferenceName;
+  currentConferenceName = conferenceName;
 
-  JitsiMeetJS.createLocalTracks({ devices: ['audio'/*, 'video'*/] })
+  JitsiMeetJS.createLocalTracks({ devices: ["audio"/* , 'video' */] })
     .then(tracks => {
       onLocalTracks(tracks);
       joinRoom(conferenceName);
@@ -347,107 +418,26 @@ const createLocalAudioTracks = (conferenceName, callback = null) => {
 }
 
 startJitsiConnection();
-/*---- JITST END ----*/
+/* ---- JITST END ----*/
 /* ******************************************************************** */
-
-var _isCameraPermissionGranted = false;
-var _isCameraPermissionDenied = false;
-
-navigator.permissions.query({ name: "camera" })
-  .then(({ state }) => {
-    _isCameraPermissionGranted = (state === 'granted');
-  });
-
-navigator.permissions.query({ name: "camera" })
-  .then(({ state }) => {
-    _isCameraPermissionDenied = (state === 'denied');
-  });
-
-const _onLocalTrackMuteChangedCallbacks = {};
-const _onJoinRoomCallbacks = {};
-const _onLeaveRoomCallbacks = {};
-
-export const registerOnLocalTrackMuteChangedCallback = (id, callback) => {
-  _onLocalTrackMuteChangedCallbacks[id] = callback;
-}
-export const unregisterOnLocalTrackMuteChangedCallback = (id) => {
-  delete _onLocalTrackMuteChangedCallbacks[id];
-}
-export const registerOnJoinRoomCallback = (id, callback) => {
-  _onJoinRoomCallbacks[id] = callback;
-}
-export const unregisterOnJoinRoomCallback = (id) => {
-  delete _onJoinRoomCallbacks[id];
-}
-export const registerOnLeaveRoomCallback = (id, callback) => {
-  _onLeaveRoomCallbacks[id] = callback;
-}
-export const unregisterOnLeaveRoomCallback = (id) => {
-  delete _onLeaveRoomCallbacks[id];
-}
-
-export const browserHasSupport = () => {
-  try {
-    return !!navigator.mediaDevices;
-  } catch (e) {
-    return false;
-  }
-}
-
-export const isMicrophonePermissionGranted = async () => {
-  if (!browserHasSupport()) {
-    return false;
-  }
-
-  return await navigator.permissions.query({ name: "microphone" })
-    .then(({ state }) => {
-      return (state === 'granted');
-    });
-}
-
-export const isMicrophoneBlocked = async () => {
-  if (!browserHasSupport()) {
-    return true;
-  }
-
-  return await navigator.permissions.query({ name: "microphone" })
-    .then(({ state }) => {
-      return (state === 'denied');
-    });
-}
 
 export const requestPermissionToMicrophone = (conferenceName, callback) => {
   createLocalAudioTracks(conferenceName, callback);
 };
 
-export const leaveRoom = () => {
-  const previousConferenceName = _conferenceName
-  _isJoined = false;
-  for (let i = 0; i < _localTracks.length; i++) {
-    _localTracks[i].dispose();
-  }
-  room.leave().then(() => {
-    if (previousConferenceName === _conferenceName) {
-      Object.keys(_onLeaveRoomCallbacks).forEach(id => {
-        _onLeaveRoomCallbacks[id]();
-      });
-    }
-  });
-}
-
 export const toogleMute = (conferenceName) => {
-  if (!_isJoined) {
+  if (!isJoined) {
     const id = uuid();
     registerOnJoinRoomCallback(id, () => {
       unregisterOnJoinRoomCallback(id);
-      _localTracks.forEach(track => track.unmute());
+      localTracks.forEach(track => track.unmute());
     });
 
     createLocalAudioTracks(conferenceName);
     return;
   }
 
-  _localTracks.forEach(track => {
+  localTracks.forEach(track => {
     if (track.isMuted())
       track.unmute();
     else
@@ -456,8 +446,8 @@ export const toogleMute = (conferenceName) => {
 }
 
 export const parseConferenceName = (room) => {
-  if (!room || !room.name) return '';
+  if (!room || !room.name) return "";
   return room.name.trim().toLowerCase()
-    .split(' ').map(t => t.trim()).join('-')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+    .split(" ").map(t => t.trim()).join("-")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
