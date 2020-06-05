@@ -9,6 +9,10 @@ export const ADD_USER = "ADD_USER";
 export const REMOVE_USER = "REMOVE_USER";
 export const USER_ENTER_MEETING = "USER_ENTER_MEETING";
 export const USER_LEFT_MEETING = "USER_LEFT_MEETING";
+export const ENABLE_AUDIO = "ENABLE_AUDIO";
+export const DISABLE_AUDIO = "DISABLE_AUDIO";
+export const ENABLE_MICROPHONE = "ENABLE_MICROPHONE";
+export const DISABLE_MICROPHONE = "DISABLE_MICROPHONE";
 export const CHANGE_SYSTEM_SETTING = "CHANGE_SYSTEM_SETTING";
 export const CHANGE_MEETING_SETTING = "CHANGE_MEETING_SETTING";
 export const TOGGLE_MESSAGE_DIALOG = "TOGGLE_MESSAGE_DIALOG";
@@ -72,6 +76,30 @@ export const userEnterMeeting = (user, roomId) => ({
 
 export const userLeftMeeting = (user, roomId) => ({
   type: USER_LEFT_MEETING,
+  user,
+  roomId
+});
+
+export const enableAudio = (user, roomId) => ({
+  type: ENABLE_AUDIO,
+  user,
+  roomId
+});
+
+export const disableAudio = (user, roomId) => ({
+  type: DISABLE_AUDIO,
+  user,
+  roomId
+});
+
+export const enableMicrophone = (user, roomId) => ({
+  type: ENABLE_MICROPHONE,
+  user,
+  roomId
+});
+
+export const disableMicrophone = (user, roomId) => ({
+  type: DISABLE_MICROPHONE,
   user,
   roomId
 });

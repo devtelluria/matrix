@@ -27,6 +27,17 @@ class OfficeController {
     }
   }
 
+  setUserAudioInformation(userId, isAudioActive, isMicrophoneActive) {
+    const userInRoom = this.getUserInRoom(userId);
+
+    if (userInRoom) {
+      userInRoom.user.audioActive = isAudioActive;
+      userInRoom.user.microphoneActive = isMicrophoneActive;
+
+      this.addUserInRoom(userInRoom.user, userInRoom.room);
+    }
+  }
+
   getUserInRoom(userId) {
     return this.usersInRoomOffice.get(userId);
   }

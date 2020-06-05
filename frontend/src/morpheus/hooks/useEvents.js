@@ -11,6 +11,10 @@ const useEvents = (
   onRemoveUser,
   onUserEnterMeeting,
   onUserLeftMeeting,
+  onUserEnableAudio,
+  onUserDisableAudio,
+  onUserEnableMicrophone,
+  onUserDisableMicrophone,
   enqueueSnackbar,
   closeSnackbar,
   setReceiveInviteOpen,
@@ -54,6 +58,16 @@ const useEvents = (
       events.onParticipantLeftMeet((user, roomId) => {
         onUserLeftMeeting(user, roomId);
       });
+      events.onUpdateUserAudioInformation((user, roomId) => {
+        if (!user.audioActive)
+          onUserDisableAudio(user, roomId);
+        else if (user.audioActive && !user.microphoneActive)
+          onUserEnableAudio(user, roomId);
+        else if (user.audioActive && user.microphoneActive)
+          onUserEnableMicrophone(user, roomId);
+        else if (user.audioActive && !user.microphoneActive)
+          onUserDisableMicrophone(user, roomId);
+      });
       events.onDisconnect(userId => {
         onRemoveUser(userId);
       });
@@ -83,6 +97,10 @@ const useEvents = (
     onSyncOffice,
     onUserEnterMeeting,
     onUserLeftMeeting,
+    onUserEnableAudio,
+    onUserDisableAudio,
+    onUserEnableMicrophone,
+    onUserDisableMicrophone,
     rooms,
     setInvitation,
     setReceiveInviteOpen,

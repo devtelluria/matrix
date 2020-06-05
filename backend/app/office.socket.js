@@ -58,6 +58,10 @@ class Office {
         this.updateUserMeetInformation(userId, "left-meet", false);
       });
 
+      socket.on("update-audio-info", data => {
+        this.updateUserAudioInformation(data.userId, "update-audio-info", data.audioActive, data.microphoneActive);
+      });
+
       socket.on("get-user-to-room", data => {
         const userInRoom = this.officeController.getUserInRoom(data.user);
         if (userInRoom) {
@@ -74,6 +78,13 @@ class Office {
 
     const userInRoom = this.officeController.getUserInRoom(userId);
     this.io.sockets.emit(meetEvent, userInRoom);
+  }
+
+  updateUserAudioInformation(userId, audioEvent, isAudioActive, isMicrophoneActive) {
+    this.officeController.setUserAudioInformation(userId, isAudioActive, isMicrophoneActive);
+
+    const userInRoom = this.officeController.getUserInRoom(userId);
+    this.io.sockets.emit(audioEvent, userInRoom);
   }
 
   addUserInRoom(user, room) {

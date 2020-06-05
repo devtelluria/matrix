@@ -79,6 +79,22 @@ export const emitLeftMeeting = () => {
   events.leftMeet();
 };
 
+export const emitEnableAudio = () => {
+  events.enableAudio();
+};
+
+export const emitDisableAudio = () => {
+  events.disableAudio();
+};
+
+export const emitEnableMicrophone = () => {
+  events.enableMicrophone();
+};
+
+export const emitDisableMicrophone = () => {
+  events.disableMicrophone();
+};
+
 export const emitInviteUser = userId => {
   const roomId = profile.loadStoredRoom();
   events.callUserForMyRoom(userId, roomId);

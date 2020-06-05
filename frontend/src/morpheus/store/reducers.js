@@ -15,7 +15,11 @@ import {
   TOGGLE_MESSAGE_DIALOG,
   TOGGLE_THEME,
   OPEN_LOGOUT_CONFIRM_DIALOG,
-  CLOSE_LOGOUT_CONFIRM_DIALOG
+  CLOSE_LOGOUT_CONFIRM_DIALOG,
+  ENABLE_AUDIO,
+  DISABLE_AUDIO,
+  ENABLE_MICROPHONE,
+  DISABLE_MICROPHONE
 } from "./actions";
 import storage from "./storage";
 import { getDefaultTheme, toggleTheme } from "../Themes";
@@ -37,7 +41,10 @@ export const initialState = {
     search: ""
   },
   systemSettings: {
-    notificationDisabled: false
+    notificationDisabled: false,
+    microphoneDisabled: true,
+    cameraDisabled: true,
+    audioOutputDisabled: true
   },
   meetingSettings: storage.getMeetingSettings({
     micEnabled: true,
@@ -93,7 +100,9 @@ const buildUsersState = state => {
       avatar: u.user.imageUrl,
       inMeet: !!u.user.inMeet,
       roomId: room ? room.id : "",
-      roomName: room ? room.name : ""
+      roomName: room ? room.name : "",
+      microphoneActive: !!u.user.microphoneActive,
+      audioActive: !!u.user.audioActive
     };
   });
 
@@ -123,6 +132,39 @@ const buildInMeetState = (state, action, inMeet) => {
         user: {
           ...item.user,
           inMeet
+        }
+      };
+    }
+
+    return item;
+  });
+
+  return buildUsersState(
+    buildOfficeState({
+      ...state,
+      currentUser,
+      usersInRoom
+    })
+  );
+};
+
+const buildRoomAudioState = (state, action, audioActive, microphoneActive) => {
+  const { id } = action.user;
+  const currentUser = { ...state.currentUser };
+
+  if (currentUser.id === id) {
+    currentUser.audioActive = audioActive;
+    currentUser.microphoneActive = microphoneActive;
+  }
+
+  const usersInRoom = state.usersInRoom.map(item => {
+    if (item.user.id === id) {
+      return {
+        ...item,
+        user: {
+          ...item.user,
+          audioActive,
+          microphoneActive
         }
       };
     }
@@ -233,6 +275,14 @@ const reducers = (state = initialState, action) => {
       return buildInMeetState(state, action, true);
     case USER_LEFT_MEETING:
       return buildInMeetState(state, action, false);
+    case ENABLE_AUDIO:
+      return buildRoomAudioState(state, action, true, false);
+    case DISABLE_AUDIO:
+      return buildRoomAudioState(state, action, false, false);
+    case ENABLE_MICROPHONE:
+      return buildRoomAudioState(state, action, true, true);
+    case DISABLE_MICROPHONE:
+      return buildRoomAudioState(state, action, true, false);
     case ADD_ERROR:
       return {
         ...state,

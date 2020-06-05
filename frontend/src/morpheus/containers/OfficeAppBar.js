@@ -14,12 +14,14 @@ import {
 import {
   selectOfficeFilter,
   selectCurrentUser,
+  selectCurrentRoom,
   selectSystemSettings
 } from "../store/selectors";
 import {
   OfficeFilterPropType,
   SettingsPropType,
-  CurrentUserPropType
+  CurrentUserPropType,
+  CurrentRoomPropType
 } from "../store/models";
 
 const OfficeAppBar = ({
@@ -29,7 +31,8 @@ const OfficeAppBar = ({
   onLogout,
   officeFilter,
   settings,
-  currentUser
+  currentUser,
+  currentRoom
 }) => (
   <>
     <AppBarTitle>Proseia</AppBarTitle>
@@ -39,6 +42,8 @@ const OfficeAppBar = ({
       onChangeSettings={onChangeSettings}
       onChangeTheme={onChangeTheme}
       settings={settings}
+      currentUser={currentUser}
+      currentRoom={currentRoom}
     />
     <MenuAuth onLogout={onLogout} userName={currentUser.name} />
   </>
@@ -51,7 +56,8 @@ OfficeAppBar.propTypes = {
   onLogout: PropTypes.func,
   officeFilter: OfficeFilterPropType,
   settings: SettingsPropType,
-  currentUser: CurrentUserPropType
+  currentUser: CurrentUserPropType,
+  currentRoom: CurrentRoomPropType
 };
 
 OfficeAppBar.defaultProps = {
@@ -61,12 +67,14 @@ OfficeAppBar.defaultProps = {
   onLogout: () => {},
   officeFilter: {},
   settings: {},
-  currentUser: {}
+  currentUser: {},
+  currentRoom: {}
 };
 
 const mapStateToProps = state => ({
   officeFilter: selectOfficeFilter(state),
   currentUser: selectCurrentUser(state),
+  currentRoom: selectCurrentRoom(state),
   settings: selectSystemSettings(state)
 });
 

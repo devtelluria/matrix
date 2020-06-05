@@ -9,6 +9,10 @@ import CardActions from "@material-ui/core/CardActions";
 import Button from "@material-ui/core/Button";
 import Tooltip from "@material-ui/core/Tooltip";
 import { makeStyles } from "@material-ui/core/styles";
+import MicIcon from '@material-ui/icons/Mic';
+import MicOffIcon from '@material-ui/icons/MicOff';
+import VolumeUpIcon from '@material-ui/icons/VolumeUp';
+import VolumeOffIcon from '@material-ui/icons/VolumeOff';
 import clsx from "clsx";
 
 const useStyles = makeStyles(() => ({
@@ -76,6 +80,16 @@ const RoomCard = ({ name, users, meetingEnabled, onEnterRoom, onEnterMeeting }) 
                   })}
                 >
                   <Avatar src={decodeURIComponent(user.imageUrl)} />
+                  {
+                    user.microphoneActive
+                      ? <MicIcon fontSize="small" />
+                      : <MicOffIcon fontSize="small" style={{ opacity: 0.4 }} />
+                  }
+                  {
+                    user.audioActive
+                      ? <VolumeUpIcon fontSize="small" />
+                      : <VolumeOffIcon fontSize="small" style={{ opacity: 0.4 }} />
+                  }
                 </div>
               </Tooltip>
             ))}
@@ -111,8 +125,8 @@ RoomCard.propTypes = {
 };
 
 RoomCard.defaultProps = {
-  onEnterRoom: () => {},
-  onEnterMeeting: () => {},
+  onEnterRoom: () => { },
+  onEnterMeeting: () => { },
   meetingEnabled: true,
   users: [],
   name: ""

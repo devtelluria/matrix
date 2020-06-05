@@ -44,6 +44,38 @@ OfficeEvents.prototype.leftMeet = function leftMeet() {
   this.emitEvent("left-meet", this.config.currentUser.id);
 };
 
+OfficeEvents.prototype.enableAudio = function enableAudio() {
+  this.emitEvent("update-audio-info", {
+    userId: this.config.currentUser.id,
+    audioActive: true,
+    microphoneActive: false
+  });
+};
+
+OfficeEvents.prototype.disableAudio = function disableAudio() {
+  this.emitEvent("update-audio-info", {
+    userId: this.config.currentUser.id,
+    audioActive: false,
+    microphoneActive: false
+  });
+};
+
+OfficeEvents.prototype.enableMicrophone = function enableMicrophone() {
+  this.emitEvent("update-audio-info", {
+    userId: this.config.currentUser.id,
+    audioActive: true,
+    microphoneActive: true
+  });
+};
+
+OfficeEvents.prototype.disableMicrophone = function disableMicrophone() {
+  this.emitEvent("update-audio-info", {
+    userId: this.config.currentUser.id,
+    audioActive: true,
+    microphoneActive: false
+  });
+};
+
 OfficeEvents.prototype.callUserForMyRoom = function callUserForMyRoom(
   userId,
   roomId
@@ -68,6 +100,12 @@ OfficeEvents.prototype.onParticipantLeftMeet = function onParticipantLeftMeet(
 ) {
   this.listenEvent("left-meet", callback);
 };
+
+OfficeEvents.prototype.onUpdateUserAudioInformation = function onUpdateUserAudioInformation(
+  callback
+) {
+  this.listenEvent("update-audio-info", callback);
+}
 
 OfficeEvents.prototype.onSyncOffice = function onSyncOffice(callback) {
   this.listenEvent("sync-office", callback);

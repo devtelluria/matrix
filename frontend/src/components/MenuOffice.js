@@ -10,6 +10,13 @@ import debounce from "lodash.debounce";
 
 import ThemeCheckbox from "./ThemeCheckbox";
 import NotificationCheckbox from "./NotificationCheckbox";
+import MicrophoneCheckbox from "./MicrophoneCheckbox";
+import AudioOutputCheckbox from "./AudioOutputCheckbox";
+
+import {
+  CurrentUserPropType,
+  CurrentRoomPropType
+} from "../morpheus/store/models";
 
 const useStyles = makeStyles(theme => ({
   search: {
@@ -56,7 +63,9 @@ const MenuOffice = ({
   onChangeSettings,
   onChangeTheme,
   filter,
-  settings
+  settings,
+  currentUser,
+  currentRoom
 }) => {
   const classes = useStyles();
   const commitSearch = debounce(onChangeFilter, 300);
@@ -79,6 +88,26 @@ const MenuOffice = ({
           }}
         />
       </div>
+
+      <MicrophoneCheckbox
+        currentUser={currentUser}
+        currentRoom={currentRoom}
+        isDisabled={settings.microphoneDisabled}
+        isAudioOutputDisabled={settings.audioOutputDisabled}
+        onChange={disabled => {
+          onChangeSettings("microphoneDisabled", disabled);
+        }}
+        toggleAudioOutput={disabled => {
+          onChangeSettings("audioOutputDisabled", disabled);
+        }}
+      />
+
+      <AudioOutputCheckbox
+        currentUser={currentUser}
+        currentRoom={currentRoom}
+        isDisabled={settings.audioOutputDisabled}
+      />
+
       <Tooltip title="Show only full room">
         <Checkbox
           icon={<SupervisedUserCircle />}
@@ -108,16 +137,23 @@ MenuOffice.propTypes = {
     onlyFullRoom: PropTypes.bool
   }),
   settings: PropTypes.shape({
-    notificationDisabled: PropTypes.bool
-  })
+    notificationDisabled: PropTypes.bool,
+    microphoneDisabled: PropTypes.bool,
+    cameraDisabled: PropTypes.bool,
+    audioOutputDisabled: PropTypes.bool
+  }),
+  currentUser: CurrentUserPropType,
+  currentRoom: CurrentRoomPropType
 };
 
 MenuOffice.defaultProps = {
-  onChangeFilter: () => {},
-  onChangeSettings: () => {},
-  onChangeTheme: () => {},
+  onChangeFilter: () => { },
+  onChangeSettings: () => { },
+  onChangeTheme: () => { },
   filter: {},
-  settings: {}
+  settings: {},
+  currentUser: {},
+  currentRoom: {}
 };
 
 export default MenuOffice;

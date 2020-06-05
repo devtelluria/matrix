@@ -25,7 +25,11 @@ import {
   addError,
   removeUser,
   userEnterMeeting,
-  userLeftMeeting
+  userLeftMeeting,
+  enableAudio,
+  disableAudio,
+  enableMicrophone,
+  disableMicrophone
 } from "./store/actions";
 import {
   selectRooms,
@@ -60,6 +64,10 @@ const MorpheusApp = ({
   onRemoveUser,
   onUserEnterMeeting,
   onUserLeftMeeting,
+  onUserEnableAudio,
+  onUserDisableAudio,
+  onUserEnableMicrophone,
+  onUserDisableMicrophone,
   history,
   currentRoom,
   settings,
@@ -91,6 +99,10 @@ const MorpheusApp = ({
     onRemoveUser,
     onUserEnterMeeting,
     onUserLeftMeeting,
+    onUserEnableAudio,
+    onUserDisableAudio,
+    onUserEnableMicrophone,
+    onUserDisableMicrophone,
     enqueueSnackbar,
     closeSnackbar,
     setReceiveInviteOpen,
@@ -176,6 +188,10 @@ MorpheusApp.propTypes = {
   history: PropTypes.shape({
     push: PropTypes.func.isRequired
   }).isRequired,
+  onUserEnableAudio: PropTypes.func,
+  onUserDisableAudio: PropTypes.func,
+  onUserEnableMicrophone: PropTypes.func,
+  onUserDisableMicrophone: PropTypes.func,
   currentRoom: CurrentRoomPropType.isRequired,
   rooms: RoomsPropType.isRequired,
   currentUser: CurrentUserPropType.isRequired,
@@ -196,6 +212,10 @@ MorpheusApp.defaultProps = {
   onRemoveUser: () => {},
   onUserEnterMeeting: () => {},
   onUserLeftMeeting: () => {},
+  onUserEnableAudio: () => {},
+  onUserDisableAudio: () => {},
+  onUserEnableMicrophone: () => {},
+  onUserDisableMicrophone: () => {},
   error: undefined
 };
 
@@ -220,7 +240,11 @@ const mapDispatchToProps = {
   onAddError: addError,
   onRemoveUser: removeUser,
   onUserEnterMeeting: userEnterMeeting,
-  onUserLeftMeeting: userLeftMeeting
+  onUserLeftMeeting: userLeftMeeting,
+  onUserEnableAudio: enableAudio,
+  onUserDisableAudio: disableAudio,
+  onUserEnableMicrophone: enableMicrophone,
+  onUserDisableMicrophone: disableMicrophone
 };
 
 export default withRouter(

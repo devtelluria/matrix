@@ -16,11 +16,17 @@ const fetchFromFile = () => {
   return new Promise(resolve => resolve(roomsDetail));
 };
 
+const normalizeString = (str) => {
+  return str.trim().toLowerCase()
+    .split(' ').map(t => t.trim()).join('-')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+}
+
 const createRoomFileSync = () => {
   const roomsData = [];
 
   roomsData[0] = {
-    id: uuid(),
+    id: uuid(), // normalizeString("Recepção"),
     name: "Recepção",
     disableMeeting: true,
   };
@@ -54,7 +60,7 @@ const createRoomFileSync = () => {
 
   for (const niceName of niceNames) {
     roomsData.push({
-      id: uuid(),
+      id: uuid(), //normalizeString(niceName),
       name: niceName
     });
   }
