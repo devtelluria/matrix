@@ -63,7 +63,7 @@ const RoomPage = ({
 
   const enterMeeting = () => {
     const { roomId } = match.params;
-    const domain = "209.50.53.252.us-chi1.upcloud.host";
+    const domain = "209-50-53-252.us-chi1.upcloud.host";
     const options = adaptJitsiConfig(roomId, meetRef.current, meetingSettings);
 
     emitStartMeeting();
