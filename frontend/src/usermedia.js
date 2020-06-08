@@ -61,7 +61,7 @@ export const isMicrophoneBlocked = async () => {
 /* ---- JITST BEGIN ----*/
 window.$ = jquery;
 
-const BACKEND_URL = "209-50-53-252.us-chi1.upcloud.host";
+const BACKEND_URL = "209-50-56-208.us-chi1.upcloud.host";
 
 const OPTIONS = {
   hosts: {
