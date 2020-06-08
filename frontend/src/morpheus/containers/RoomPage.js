@@ -17,6 +17,8 @@ import { RoomsPropType, CurrentRoomPropType } from "../store/models";
 import EnterMeetingDialog from "./EnterMeetingDialog";
 import { adaptJitsiConfig } from "../../jitsi/JitsiConfig";
 
+import { leaveRoom } from "../../usermedia";
+
 const useStyles = makeStyles(() => ({
   root: {
     height: "100%",
@@ -89,6 +91,7 @@ const RoomPage = ({
           history.push("/morpheus/");
         }}
         onConfirm={() => {
+          leaveRoom();
           setMeetingDialogOpen(false);
           enterMeeting();
         }}
