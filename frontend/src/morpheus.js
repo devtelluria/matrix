@@ -17,7 +17,7 @@ function renderApp() {
   );
 }
 
-window.onload = () => {
+window.onload = async () => {
   const isAuthenticated = document.getElementById("isAuthenticated").value === "true";
   const userString = document.getElementById("user").value;
   const matrixProfile = new MatrixProfile();
