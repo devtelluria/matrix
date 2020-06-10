@@ -61,21 +61,6 @@ export const isMicrophoneBlocked = async () => {
 /* ---- JITST BEGIN ----*/
 window.$ = jquery;
 
-const BACKEND_URL = window.localStorage.getItem("jitsiEndpoint");
-
-const OPTIONS = {
-  hosts: {
-    domain: "meet.jitsi",
-    muc: "muc.meet.jitsi" // FIXME: use XEP-0030
-  },
-  // serviceUrl: `https://${backendUrl}/http-bind`,
-
-  bosh: `https://${BACKEND_URL}/http-bind`, // FIXME: use xep-0156 for that
-
-  // The name of client node advertised in XEP-0115 'c' stanza
-  clientNode: "https://jitsi.org/jitsimeet"
-};
-
 const CONFIG_OPTIONS = {
   openBridgeChannel: true
 };
@@ -216,13 +201,6 @@ const onUserLeft = (id) => {
   }
 }
 
-/**
-* That function is called when connection is established successfully
-*/
-const onConnectionSuccess = () => {
-  isConnected = true;
-}
-
 const joinRoom = (conferenceName) => {
   if (!isConnected)
     return;
@@ -254,6 +232,16 @@ const joinRoom = (conferenceName) => {
     JitsiMeetJS.events.conference.PHONE_NUMBER_CHANGED,
     () => console.log(`${currentRoom.getPhoneNumber()} - ${currentRoom.getPhonePin()}`));
   currentRoom.join();
+}
+
+/**
+* That function is called when connection is established successfully
+*/
+const onConnectionSuccess = () => {
+  isConnected = true;
+
+  if (currentConferenceName)
+    joinRoom(currentConferenceName);
 }
 
 /**
@@ -365,6 +353,21 @@ if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable("output")) {
 }
 
 const startJitsiConnection = () => {
+  const BACKEND_URL = window.localStorage.getItem("jitsiEndpoint");
+
+  const OPTIONS = {
+    hosts: {
+      domain: "meet.jitsi",
+      muc: "muc.meet.jitsi" // FIXME: use XEP-0030
+    },
+    // serviceUrl: `https://${backendUrl}/http-bind`,
+
+    bosh: `https://${BACKEND_URL}/http-bind`, // FIXME: use xep-0156 for that
+
+    // The name of client node advertised in XEP-0115 'c' stanza
+    clientNode: "https://jitsi.org/jitsimeet"
+  };
+
   connection = new JitsiMeetJS.JitsiConnection(null, null, OPTIONS);
 
   connection.addEventListener(
@@ -385,6 +388,8 @@ const startJitsiConnection = () => {
 }
 
 export const leaveRoom = () => {
+  if (!currentRoom) return;
+
   const previousConferenceName = currentConferenceName
   isJoined = false;
   for (let i = 0; i < localTracks.length; i++) {
@@ -417,7 +422,11 @@ const createLocalAudioTracks = (conferenceName, callback = null) => {
     });
 }
 
-startJitsiConnection();
+fetch("/jitsi-endpoint")
+  .then(async response => {
+    window.localStorage.setItem("jitsiEndpoint", await response.json());
+    startJitsiConnection();
+  });
 /* ---- JITST END ----*/
 /* ******************************************************************** */
 

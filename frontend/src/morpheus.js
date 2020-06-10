@@ -32,9 +32,5 @@ window.onload = async () => {
 
   matrixProfile.storeProfileData(user);
 
-  const jitsiEndpointResponse = await fetch(`${window.location.protocol}//${window.location.hostname}:${window.location.port}/jitsi-endpoint`);
-  window.localStorage.setItem("jitsiEndpoint", await jitsiEndpointResponse.json());
-  // console.log(`using jitsi server: ${window.localStorage.getItem("jitsiEndpoint")}`);
-
   renderApp();
 };
