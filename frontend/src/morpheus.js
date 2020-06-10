@@ -17,7 +17,7 @@ function renderApp() {
   );
 }
 
-window.onload = () => {
+window.onload = async () => {
   const isAuthenticated = document.getElementById("isAuthenticated").value === "true";
   const userString = document.getElementById("user").value;
   const matrixProfile = new MatrixProfile();
@@ -31,6 +31,10 @@ window.onload = () => {
   const user = JSON.parse(userString);
 
   matrixProfile.storeProfileData(user);
+
+  const jitsiEndpointResponse = await fetch(`${window.location.protocol}//${window.location.hostname}:${window.location.port}/jitsi-endpoint`);
+  window.localStorage.setItem("jitsiEndpoint", await jitsiEndpointResponse.json());
+  // console.log(`using jitsi server: ${window.localStorage.getItem("jitsiEndpoint")}`);
 
   renderApp();
 };

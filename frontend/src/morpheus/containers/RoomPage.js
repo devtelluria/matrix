@@ -63,7 +63,7 @@ const RoomPage = ({
 
   const enterMeeting = () => {
     const { roomId } = match.params;
-    const domain = process.env.JITTSI_ENDPOINT || "209-50-56-208.us-chi1.upcloud.host";
+    const domain = window.localStorage.getItem("jitsiEndpoint");
     const options = adaptJitsiConfig(roomId, meetRef.current, meetingSettings);
 
     emitStartMeeting();

@@ -10,6 +10,10 @@ router.get("/", (req, res) => {
   });
 });
 
+router.get("/jitsi-endpoint", (req, res) => {
+  res.json(process.env.JITTSI_ENDPOINT || "209-50-56-208.us-chi1.upcloud.host");
+});
+
 router.get("/new", (req, res) => {
   const newRoom = {
     id: req.query.roomId,
@@ -19,7 +23,7 @@ router.get("/new", (req, res) => {
   };
 
   const found = req.app.locals.roomsDetail.find(
-    element => element.id == req.query.roomId,
+    (element) => element.id == req.query.roomId,
   );
 
   if (!found) {
@@ -31,7 +35,7 @@ router.get("/new", (req, res) => {
 
 router.get("/remove", (req, res) => {
   req.app.locals.roomsDetail = req.app.locals.roomsDetail.filter(
-    value => value.id !== req.query.roomId || value.temporary !== true,
+    (value) => value.id !== req.query.roomId || value.temporary !== true,
   );
 
   res.redirect(`/morpheus/office/${req.app.locals.roomsDetail[0].id}`);
