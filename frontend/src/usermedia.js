@@ -67,6 +67,7 @@ const CONFIG_OPTIONS = {
 
 let connection = null;
 let isConnected = false;
+let isConnecting = false;
 let isJoined = false;
 let currentRoom = null;
 
@@ -240,14 +241,29 @@ const onLocalTracks = (tracks, conferenceName) => {
   }
 }
 
+export const leaveRoom = () => {
+  if (!currentRoom) return;
+
+  const previousConferenceName = currentConferenceName
+  isJoined = false;
+  for (let i = 0; i < localTracks.length; i++) {
+    localTracks[i].dispose();
+  }
+  currentRoom.leave().then(() => {
+    if (previousConferenceName === currentConferenceName) {
+      Object.keys(onLeaveRoomCallbacks).forEach(id => {
+        onLeaveRoomCallbacks[id]();
+      });
+    }
+  });
+}
+
 /**
 * That function is called when connection is established successfully
 */
 const onConnectionSuccess = () => {
+  isConnecting = false;
   isConnected = true;
-
-  if (currentConferenceName)
-    joinRoom(currentConferenceName);
 }
 
 /**
@@ -278,6 +294,74 @@ const disconnect = () => {
   connection.removeEventListener(
     JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
     disconnect);
+}
+
+const startJitsiConnection = () => {
+  isConnecting = true;
+  const BACKEND_URL = window.localStorage.getItem("jitsiEndpoint");
+
+  const OPTIONS = {
+    hosts: {
+      domain: "meet.jitsi",
+      muc: "muc.meet.jitsi" // FIXME: use XEP-0030
+    },
+    // serviceUrl: `https://${backendUrl}/http-bind`,
+
+    bosh: `https://${BACKEND_URL}/http-bind`, // FIXME: use xep-0156 for that
+
+    // The name of client node advertised in XEP-0115 'c' stanza
+    clientNode: "https://jitsi.org/jitsimeet"
+  };
+
+  connection = new JitsiMeetJS.JitsiConnection(null, null, OPTIONS);
+
+  connection.addEventListener(
+    JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
+    onConnectionSuccess);
+  connection.addEventListener(
+    JitsiMeetJS.events.connection.CONNECTION_FAILED,
+    onConnectionFailed);
+  connection.addEventListener(
+    JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
+    disconnect);
+
+  JitsiMeetJS.mediaDevices.addEventListener(
+    JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
+    onDeviceListChanged);
+
+  connection.connect();
+}
+
+const createLocalAudioTracks = (conferenceName, callback = null) => {
+  if (!isConnected && isConnecting) {
+    setTimeout(() => {
+      createLocalAudioTracks(conferenceName, callback);
+    }, 1500);
+    return;
+  }
+
+  if (!isConnected && !isConnecting) {
+    startJitsiConnection();
+    setTimeout(() => {
+      createLocalAudioTracks(conferenceName, callback);
+    }, 1500);
+    return;
+  }
+
+  if (isJoined && conferenceName !== currentConferenceName) {
+    leaveRoom();
+  }
+
+  JitsiMeetJS.createLocalTracks({ devices: ["audio"/* , 'video' */] })
+    .then(tracks => {
+      currentConferenceName = conferenceName;
+      onLocalTracks(tracks, conferenceName);
+      if (callback) callback(true);
+    })
+    .catch(error => {
+      console.error(error);
+      if (callback) callback(false);
+    });
 }
 
 let isVideo = true;
@@ -356,75 +440,6 @@ if (JitsiMeetJS.mediaDevices.isDeviceChangeAvailable("output")) {
       // $('#audioOutputSelectWrapper').show();
     }
   });
-}
-
-const startJitsiConnection = () => {
-  const BACKEND_URL = window.localStorage.getItem("jitsiEndpoint");
-
-  const OPTIONS = {
-    hosts: {
-      domain: "meet.jitsi",
-      muc: "muc.meet.jitsi" // FIXME: use XEP-0030
-    },
-    // serviceUrl: `https://${backendUrl}/http-bind`,
-
-    bosh: `https://${BACKEND_URL}/http-bind`, // FIXME: use xep-0156 for that
-
-    // The name of client node advertised in XEP-0115 'c' stanza
-    clientNode: "https://jitsi.org/jitsimeet"
-  };
-
-  connection = new JitsiMeetJS.JitsiConnection(null, null, OPTIONS);
-
-  connection.addEventListener(
-    JitsiMeetJS.events.connection.CONNECTION_ESTABLISHED,
-    onConnectionSuccess);
-  connection.addEventListener(
-    JitsiMeetJS.events.connection.CONNECTION_FAILED,
-    onConnectionFailed);
-  connection.addEventListener(
-    JitsiMeetJS.events.connection.CONNECTION_DISCONNECTED,
-    disconnect);
-
-  JitsiMeetJS.mediaDevices.addEventListener(
-    JitsiMeetJS.events.mediaDevices.DEVICE_LIST_CHANGED,
-    onDeviceListChanged);
-
-  connection.connect();
-}
-
-export const leaveRoom = () => {
-  if (!currentRoom) return;
-
-  const previousConferenceName = currentConferenceName
-  isJoined = false;
-  for (let i = 0; i < localTracks.length; i++) {
-    localTracks[i].dispose();
-  }
-  currentRoom.leave().then(() => {
-    if (previousConferenceName === currentConferenceName) {
-      Object.keys(onLeaveRoomCallbacks).forEach(id => {
-        onLeaveRoomCallbacks[id]();
-      });
-    }
-  });
-}
-
-const createLocalAudioTracks = (conferenceName, callback = null) => {
-  if (isJoined && conferenceName !== currentConferenceName) {
-    leaveRoom();
-  }
-
-  JitsiMeetJS.createLocalTracks({ devices: ["audio"/* , 'video' */] })
-    .then(tracks => {
-      currentConferenceName = conferenceName;
-      onLocalTracks(tracks, conferenceName);
-      if (callback) callback(true);
-    })
-    .catch(error => {
-      console.error(error);
-      if (callback) callback(false);
-    });
 }
 
 fetch("/jitsi-endpoint")
