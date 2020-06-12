@@ -34,6 +34,7 @@ import {
 import { showMessageDialog } from "../morpheus/store/actions";
 
 let previousConferenceName = "";
+let previousInMeet = false;
 
 const MicrophoneCheckbox = ({
   onChange, toggleAudioOutput, openMessageDialog,
@@ -48,9 +49,15 @@ const MicrophoneCheckbox = ({
     if (allowed && previousConferenceName !== conferenceName) {
       previousConferenceName = conferenceName;
       requestPermissionToMicrophone(conferenceName);
+    } else if (allowed && previousInMeet && !currentUser.inMeet) {
+      requestPermissionToMicrophone(conferenceName);
     }
+
+    previousInMeet = currentUser.inMeet;
+
     toggleAllowed(allowed);
   });
+
   isMicrophoneBlocked().then(blocked => {
     toggleBlocked(blocked);
   });
@@ -95,8 +102,9 @@ const MicrophoneCheckbox = ({
               );
             } else {
               requestPermissionToMicrophone(conferenceName, hasPermission => {
-                toggleAllowed(hasPermission);
+                if (hasPermission) window.location.reload();
                 toggleBlocked(!hasPermission);
+                toggleAllowed(hasPermission);
               });
             }
           }}
